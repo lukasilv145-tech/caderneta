@@ -1,0 +1,3575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Caderneta de Gestão — App do Pescado</title>
+  <meta name="theme-color" content="#7b263a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/app-config.js"></script>
+  <script src="/api-bridge.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fonte-decorativa: 'Caveat', cursive;
+      --vinho: #7C1D2A;
+      --vinho-esc: #5A1320;
+      --vinho-claro: #F5E8EA;
+      --papel: #FFFDF5;
+      --tinta: #3B1F18;
+      --tinta-2: #5C3D35;
+      --dourado: #C8933F;
+      --dourado-cl: #FDF0D0;
+      --verde: #2D6A4F;
+      --verde-cl: #D8F3DC;
+      --laranja: #D4600A;
+      --laranja-cl: #FEE9D1;
+      --azul: #1A5A8A;
+      --azul-cl: #E0F0FB;
+      --roxo: #6B3FA0;
+      --roxo-cl: #EDE5F8;
+      --salgado: #8B4513;
+      --salgado-cl: #FFF0E6;
+      --sombra: 0 4px 18px rgba(60,15,10,0.18), 0 1px 4px rgba(60,15,10,0.10);
+      --sombra-card: 2px 3px 0 var(--vinho);
+      --fs-base: 16px;
+    }
+
+    body.dark {
+      --papel: #1E1410;
+      --tinta: #F0E8D8;
+      --tinta-2: #C4A898;
+      --vinho-claro: #3A1820;
+      --dourado-cl: #2A2010;
+      --verde-cl: #0D2A1A;
+      --laranja-cl: #2A1A08;
+      --azul-cl: #0A1E30;
+      --roxo-cl: #1A0E2A;
+      --salgado-cl: #2A1A0A;
+      background: #100A08 !important;
+    }
+
+    body.dark #mainContainer { box-shadow: 0 4px 24px rgba(0,0,0,0.6); }
+
+    body.dark .menu-card,
+    body.dark .card-visual,
+    body.dark .card-equipe,
+    body.dark .noticias-container,
+    body.dark .area-carrinho,
+    body.dark .meta-card,
+    body.dark .estoque-card,
+    body.dark .acesso-section,
+    body.dark .estoque-mari-card,
+    body.dark .noticia-item,
+    body.dark .resumo-venda-box {
+      background: #2A1A14 !important;
+      border-color: #5A3A30 !important;
+      color: var(--tinta) !important;
+    }
+
+    body.dark,
+    body.dark p,
+    body.dark span,
+    body.dark div,
+    body.dark li { color: var(--tinta); }
+
+    body.dark h2 { color: var(--vinho) !important; }
+    body.dark h3 { color: var(--tinta) !important; }
+    body.dark h4 { color: var(--dourado) !important; }
+    body.dark label { color: var(--vinho) !important; }
+
+    body.dark .user-nome  { color: var(--vinho)   !important; }
+    body.dark .user-tipo  { color: var(--tinta-2) !important; }
+    body.dark .card-visual span    { color: var(--tinta)   !important; }
+    body.dark .card-equipe-nome    { color: var(--vinho)   !important; }
+    body.dark .card-equipe-info    { color: var(--tinta-2) !important; }
+    body.dark .menu-card .mc-label { color: inherit !important; }
+    body.dark .menu-card .mc-desc  { color: var(--tinta-2) !important; }
+    body.dark .noticias-titulo     { color: var(--azul)    !important; }
+    body.dark .noticia-item strong { color: var(--vinho)   !important; }
+    body.dark .noticia-meta        { color: var(--tinta-2) !important; }
+    body.dark .menu-section-label  { color: var(--tinta-2) !important; }
+    body.dark .est-nome { color: var(--tinta)   !important; }
+    body.dark .est-qtd  { color: var(--vinho)   !important; }
+    body.dark .estoque-mari-nome { color: var(--vinho)   !important; }
+    body.dark .estoque-mari-tipo { color: var(--tinta-2) !important; }
+    body.dark .badge-vazio       { color: var(--tinta-2) !important; }
+    body.dark .resumo-linha      { color: var(--tinta)   !important; }
+    body.dark .resumo-linha:last-child { color: var(--verde) !important; }
+    body.dark .carrinho-item     { color: var(--tinta) !important; }
+    body.dark .meta-card .user-nome { color: var(--vinho) !important; }
+
+    body.dark input,
+    body.dark select,
+    body.dark textarea {
+      color: var(--tinta) !important;
+      background: transparent !important;
+    }
+    body.dark select option { background: #2A1A14; color: var(--tinta); }
+
+    body.dark table { background: #1E1410; color: var(--tinta); }
+    body.dark th    { background: #3A1820; color: var(--vinho);  }
+    body.dark td    { color: var(--tinta); border-color: #3A2820; }
+
+    body.dark button { color: var(--vinho); border-color: var(--vinho); background: #2A1A14; }
+    body.dark .btn-success   { color: var(--verde)   !important; border-color: var(--verde)   !important; box-shadow: 2px 3px 0 var(--verde)   !important; background: #2A1A14 !important; }
+    body.dark .btn-danger    { color: var(--laranja) !important; border-color: var(--laranja) !important; box-shadow: 2px 3px 0 var(--laranja) !important; background: #2A1A14 !important; }
+    body.dark .btn-secondary { color: var(--tinta-2) !important; border-color: var(--tinta-2) !important; box-shadow: 2px 3px 0 var(--tinta-2) !important; background: #2A1A14 !important; }
+    body.dark .btn-roxo      { color: var(--roxo)   !important; border-color: var(--roxo)   !important; box-shadow: 2px 3px 0 var(--roxo)   !important; background: #2A1A14 !important; }
+    body.dark .btn-acesso    { background: #2A1A14 !important; }
+    body.dark .tab-btn.ativo { background: var(--vinho) !important; color: #fff !important; }
+
+    body.dark .btn-file-pauta  { background: #3A1820 !important; color: var(--vinho) !important; border-color: var(--vinho) !important; }
+    body.dark .chip-vinho { background: #3A1820; color: var(--vinho); }
+    body.dark .chip-verde { background: #0D2A1A; color: var(--verde); }
+    body.dark .chip-azul  { background: #0A1E30; color: var(--azul);  }
+    body.dark .chip-roxo  { background: #1A0E2A; color: var(--roxo);  }
+    body.dark .chip-salgado { background: #2A1A0A; color: var(--salgado); }
+    body.dark #modalBox   { background: #2A1A14; border-color: var(--vinho); }
+    body.dark #modalBox h3 { color: var(--vinho); }
+    body.dark #modalBox p  { color: var(--tinta-2); }
+    body.dark #barraAcesso { background: #2A1418; border-color: var(--vinho); }
+    body.dark #barraAcesso span { color: var(--tinta-2); }
+    body.dark #fsIndicador  { color: var(--vinho); }
+    body.dark .acesso-section h3  { color: var(--vinho) !important; }
+    body.dark .acesso-section p   { color: var(--tinta-2) !important; }
+    body.dark .fs-btn { background: #2A1A14 !important; color: var(--tinta) !important; border-color: #5A3A30 !important; }
+    body.dark .fs-btn.ativo { background: var(--vinho) !important; color: #fff !important; }
+    body.dark .divisor { border-color: #5A3A30; }
+    body.dark .meta-progresso-bar { background: #3A2820; }
+    body.dark .estoque-mari-corpo { border-color: #5A3A30; }
+    body.dark .menu-card.salgado { border-color: var(--salgado) !important; box-shadow: 3px 3px 0 var(--salgado) !important; }
+    body.dark .menu-card.salgado .mc-label { color: var(--salgado) !important; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: var(--fs-base); }
+    body {
+      background: #3A2820;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 16px 8px;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.3s;
+    }
+    body.fonte-padrao { --fonte-decorativa: 'Inter', sans-serif; }
+
+    #mainContainer {
+      width: 100%;
+      max-width: 480px;
+      background: var(--papel);
+      position: relative;
+      border-radius: 3px 14px 14px 3px;
+      box-shadow: var(--sombra), inset 0 0 0 1px rgba(180,120,80,0.12);
+      border-left: 22px solid var(--vinho);
+      border-top: 3px solid var(--vinho);
+      border-right: 3px solid var(--vinho);
+      border-bottom: 3px solid var(--vinho);
+      min-height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    #mainContainer.wide { max-width: 860px; }
+    #mainContainer::before {
+      content: '';
+      position: absolute;
+      left: -30px; top: 0; bottom: 0;
+      width: 14px;
+      background: repeating-linear-gradient(180deg,transparent 0px,transparent 16px,#C0C0C0 16px,#C0C0C0 20px,#A8A8A8 20px,#A8A8A8 22px,transparent 22px,transparent 28px);
+      border-radius: 7px;
+      z-index: 10;
+    }
+
+    #mainContainer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(180deg,transparent 0px,transparent 27px,rgba(124,29,42,0.06) 27px,rgba(124,29,42,0.06) 28px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container-inner {
+      position: relative;
+      z-index: 1;
+      padding: 20px 20px 28px 20px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; animation: folha 0.35s ease; }
+    @keyframes folha {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .titulo-capa {
+      font-family: var(--fonte-decorativa);
+      font-size: 1.9rem; font-weight: 700;
+      color: var(--vinho); text-align: center; line-height: 1.1;
+    }
+
+    .subtitulo-capa {
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.8rem; color: var(--tinta-2);
+      text-align: center; font-style: italic;
+      letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px;
+    }
+
+    h2 {
+      font-family: var(--fonte-decorativa);
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--vinho);
+      border-bottom: 2px dashed var(--vinho);
+      padding-bottom: 6px; margin-bottom: 18px;
+    }
+
+    h3 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.9rem; font-weight: 600;
+      color: var(--tinta); margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      font-family: var(--fonte-decorativa);
+      font-size: 0.95rem; font-weight: 600;
+      color: var(--vinho); margin-top: 14px; margin-bottom: 3px;
+    }
+
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%; padding: 8px 4px;
+      background: transparent; border: none;
+      border-bottom: 2px dashed var(--vinho);
+      font-family: var(--fonte-decorativa);
+      font-size: 1.05rem; font-weight: 600;
+      color: var(--tinta); outline: none; margin-bottom: 6px;
+    }
+
+    input:focus, select:focus {
+      border-bottom: 2.5px solid var(--vinho-esc);
+      background: rgba(124,29,42,0.04);
+    }
+
+    select option { font-family: 'Inter', sans-serif; font-size: 0.9rem; }
+
+    button {
+      width: 100%; padding: 11px 14px; margin-top: 10px;
+      background: var(--papel); color: var(--vinho);
+      border: 2.5px solid var(--vinho); border-radius: 8px;
+      font-family: var(--fonte-decorativa); font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; box-shadow: var(--sombra-card);
+      transition: transform 0.08s, box-shadow 0.08s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    button:active { transform: translate(2px, 3px); box-shadow: none; }
+    button:disabled { border-color: #bbb; color: #bbb; box-shadow: 2px 3px 0 #bbb; cursor: not-allowed; }
+
+    .btn-success   { border-color: var(--verde);   color: var(--verde);   box-shadow: 2px 3px 0 var(--verde); }
+    .btn-danger    { border-color: var(--laranja);  color: var(--laranja); box-shadow: 2px 3px 0 var(--laranja); }
+    .btn-secondary { border-color: var(--tinta-2);  color: var(--tinta-2); box-shadow: 2px 3px 0 var(--tinta-2); font-size: 0.95rem; }
+    .btn-excluir {
+      width: auto; padding: 5px 12px; margin: 0;
+      font-size: 0.78rem; background: var(--papel);
+      border-color: #c0392b; color: #c0392b;
+      box-shadow: 2px 2px 0 #c0392b;
+    }
+    .btn-roxo { border-color: var(--roxo); color: var(--roxo); box-shadow: 2px 3px 0 var(--roxo); }
+    .btn-salgado { border-color: var(--salgado); color: var(--salgado); box-shadow: 2px 3px 0 var(--salgado); }
+
+    .logo-app {
+      width: 108px; height: 108px;
+      border-radius: 50%; object-fit: cover;
+      border: 4px solid var(--vinho);
+      margin: 0 auto 14px; display: block;
+      background: white;
+      box-shadow: 0 2px 8px rgba(90,19,32,0.25);
+    }
+
+    .user-bar {
+      display: flex; justify-content: space-between;
+      align-items: center; border-bottom: 2px dashed var(--vinho);
+      padding-bottom: 12px; margin-bottom: 16px; gap: 10px;
+    }
+
+    .user-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%; object-fit: cover;
+      border: 2.5px solid var(--vinho);
+      background: white; flex-shrink: 0;
+    }
+
+    .user-nome { font-family: var(--fonte-decorativa); font-size: 1.1rem; font-weight: 700; color: var(--vinho); line-height: 1.1; }
+    .user-tipo { font-size: 0.68rem; color: var(--tinta-2); text-transform: uppercase; letter-spacing: 0.8px; }
+
+    #barraAcesso {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; background: var(--vinho-claro);
+      border-bottom: 1px dashed var(--vinho); flex-wrap: wrap;
+    }
+
+    #barraAcesso span {
+      font-family: 'Source Serif 4', serif; font-size: 0.72rem;
+      color: var(--tinta-2); font-style: italic; flex: 1; min-width: 80px;
+    }
+
+    .btn-acesso {
+      padding: 5px 10px !important; width: auto !important;
+      margin: 0 !important; font-size: 0.9rem !important;
+      box-shadow: 1px 1px 0 var(--vinho) !important; min-width: 34px;
+    }
+
+    .btn-acesso-dark {
+      border-color: var(--tinta-2) !important; color: var(--tinta-2) !important;
+      box-shadow: 1px 1px 0 var(--tinta-2) !important;
+    }
+
+    #fsIndicador {
+      font-family: var(--fonte-decorativa); font-size: 0.85rem;
+      color: var(--vinho); font-weight: 700; min-width: 28px; text-align: center;
+    }
+
+    .banner-inicial {
+      width: 100%; max-height: 160px;
+      object-fit: cover; border-radius: 8px;
+      border: 2.5px solid var(--vinho); margin-bottom: 16px; display: none;
+    }
+
+    .grid-visual {
+      display: flex; flex-wrap: wrap; gap: 9px; margin: 6px 0 10px;
+    }
+
+    .card-visual {
+      width: 82px; background: white;
+      border: 2px solid #D6C7C9; border-radius: 10px;
+      padding: 8px 5px; text-align: center; cursor: pointer;
+      transition: all 0.15s; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; position: relative;
+    }
+
+    .card-visual img {
+      width: 46px; height: 46px;
+      border-radius: 50%; object-fit: cover;
+      border: 1.5px solid #e2d5d7; background: #f9f0f1;
+    }
+
+    .card-visual span {
+      font-family: var(--fonte-decorativa);
+      font-size: 0.82rem; font-weight: 600;
+      line-height: 1.15; color: var(--tinta);
+      word-break: break-word; width: 100%;
+    }
+
+    .card-visual small {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      color: var(--vinho); background: var(--vinho-claro);
+      border-radius: 6px; padding: 1px 6px;
+      letter-spacing: 0.02em; margin-top: -2px;
+    }
+    body.dark .card-visual small { background: var(--tinta); color: var(--dourado-cl) !important; }
+
+    .card-visual.selecionado {
+      border-color: var(--vinho); background: var(--vinho-claro);
+      transform: scale(1.06); box-shadow: 0 0 0 3px rgba(124,29,42,0.15);
+    }
+
+    .btn-del-card {
+      position: absolute; top: -6px; right: -6px;
+      width: 20px !important; height: 20px;
+      border-radius: 50%; background: #c0392b;
+      color: white; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 5;
+      border: none; margin: 0; padding: 0; box-shadow: none !important; line-height: 1;
+    }
+
+    .btn-del-card:active { transform: scale(0.9); }
+
+    .menu-section-label {
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--tinta-2); margin: 20px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .menu-section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--vinho); opacity: 0.25;
+    }
+
+    .menu-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 4px;
+    }
+
+    .menu-card {
+      background: white; border: 2px solid var(--vinho);
+      border-radius: 12px; padding: 16px 8px 12px;
+      text-align: center; cursor: pointer;
+      box-shadow: 3px 3px 0 var(--vinho);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 7px;
+      transition: transform 0.09s, box-shadow 0.09s;
+      position: relative; overflow: hidden;
+    }
+
+    .menu-card:active { transform: translate(3px,3px); box-shadow: none; }
+    .menu-card .mc-icon  { font-size: 1.9rem; line-height: 1; }
+    .menu-card .mc-label {
+      font-family: var(--fonte-decorativa); font-weight: 700;
+      color: var(--vinho); font-size: 0.95rem; line-height: 1.15;
+    }
+    .menu-card .mc-desc { font-size: 0.65rem; color: var(--tinta-2); line-height: 1.2; }
+
+    .menu-card.verde  { border-color: var(--verde);   box-shadow: 3px 3px 0 var(--verde);  }
+    .menu-card.verde  .mc-label { color: var(--verde);  }
+    .menu-card.laranja{ border-color: var(--laranja);  box-shadow: 3px 3px 0 var(--laranja);}
+    .menu-card.laranja .mc-label{ color: var(--laranja); }
+    .menu-card.azul   { border-color: var(--azul);    box-shadow: 3px 3px 0 var(--azul);   }
+    .menu-card.azul   .mc-label { color: var(--azul);   }
+    .menu-card.dourado{ border-color: var(--dourado);  box-shadow: 3px 3px 0 var(--dourado);}
+    .menu-card.dourado .mc-label{ color: var(--dourado); }
+    .menu-card.roxo   { border-color: var(--roxo);    box-shadow: 3px 3px 0 var(--roxo);   }
+    .menu-card.roxo   .mc-label { color: var(--roxo);   }
+    .menu-card.salgado{ border-color: var(--salgado); box-shadow: 3px 3px 0 var(--salgado);}
+    .menu-card.salgado .mc-label { color: var(--salgado); }
+
+    .menu-card-fullwidth {
+      grid-column: 1 / -1;
+    }
+
+    .card-equipe {
+      width: 130px; background: white;
+      border: 2px solid #D6C7C9; border-radius: 12px;
+      padding: 12px 8px; text-align: center; cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 5px;
+      box-shadow: 2px 2px 0 #D6C7C9;
+      transition: transform 0.1s, box-shadow 0.1s; position: relative;
+    }
+
+    .card-equipe:active { transform: translate(2px,2px); box-shadow: none; }
+    .card-equipe img {
+      width: 58px; height: 58px;
+      border-radius: 50%; object-fit: cover; border: 2.5px solid var(--vinho);
+    }
+
+    .card-equipe-nome { font-family: var(--fonte-decorativa); font-size: 0.95rem; font-weight: 700; color: var(--vinho); line-height: 1.1; word-break: break-word; }
+    .card-equipe-info { font-size: 0.65rem; color: var(--tinta-2); line-height: 1.3; }
+    .card-equipe-add  { border: 2px dashed var(--vinho); background: var(--vinho-claro); }
+
+    .noticias-container {
+      background: white; border: 2px solid var(--azul);
+      border-radius: 10px; padding: 12px; margin-bottom: 18px;
+    }
+
+    .noticias-titulo { font-family: 'Source Serif 4', serif; font-size: 0.82rem; font-weight: 600; color: var(--azul); margin-bottom: 8px; }
+    .noticia-item { border-bottom: 1px dashed #c3d8ec; padding-bottom: 10px; margin-bottom: 10px; }
+    .noticia-item:last-child { border: none; margin: 0; padding: 0; }
+    .noticia-item strong { font-family: var(--fonte-decorativa); font-size: 1rem; color: var(--vinho); display: block; }
+    .noticia-meta { font-size: 0.7rem; color: var(--tinta-2); margin-bottom: 3px; }
+    .noticia-img  { width: 100%; border-radius: 7px; margin-top: 7px; border: 1px solid #c3d8ec; object-fit: cover; }
+
+    .msg {
+      padding: 12px 14px; border-radius: 8px; margin-bottom: 14px;
+      font-family: var(--fonte-decorativa); font-size: 1rem; font-weight: 700;
+      text-align: center; display: none; border: 2px solid;
+    }
+
+    .msg-sucesso { background: var(--verde-cl); color: var(--verde); border-color: var(--verde); }
+    .msg-erro    { background: #fee2e2; color: #991B1B; border-color: #991B1B; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: var(--papel); color: var(--tinta); }
+    th, td { padding: 7px 6px; text-align: center; border: 1px solid var(--vinho-claro); white-space: nowrap; }
+    th { background: var(--vinho-claro); font-family: 'Source Serif 4',serif; font-weight: 600; color: var(--vinho); font-size: 0.7rem; }
+    .table-container { overflow-x: auto; border-radius: 8px; border: 2px solid var(--vinho); margin-top: 14px; }
+
+    .area-carrinho {
+      display: none; margin-top: 10px;
+      background: var(--dourado-cl); padding: 10px 12px;
+      border-radius: 8px; border: 1.5px dashed var(--dourado);
+    }
+
+    .area-carrinho h4 { font-family: var(--fonte-decorativa); font-size: 0.95rem; color: var(--dourado); margin-bottom: 6px; }
+    .carrinho-item {
+      font-family: var(--fonte-decorativa); font-size: 0.95rem; color: var(--tinta);
+      padding: 3px 0; border-bottom: 1px dashed rgba(200,147,63,0.4);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .carrinho-item:last-child { border: none; }
+
+    .estoque-card {
+      width: 95px; background: white;
+      border: 2px solid #D6C7C9; border-radius: 10px;
+      padding: 10px 6px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+
+    .estoque-card img {
+      width: 46px; height: 46px; border-radius: 50%;
+      object-fit: cover; border: 1.5px solid #e2d5d7;
+    }
+
+    .est-nome { font-family: var(--fonte-decorativa); font-size: 0.82rem; font-weight: 600; color: var(--tinta); line-height: 1.1; }
+    .est-qtd  { font-family: var(--fonte-decorativa); font-size: 1.25rem; font-weight: 700; color: var(--vinho); }
+
+    .estoque-mari-card {
+      background: white; border: 2px solid #D6C7C9;
+      border-radius: 12px; padding: 14px; margin-bottom: 14px;
+    }
+
+    .estoque-mari-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px; cursor: pointer;
+    }
+
+    .estoque-mari-header img {
+      width: 40px; height: 40px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--vinho); flex-shrink: 0;
+    }
+
+    .estoque-mari-nome { font-family: var(--fonte-decorativa); font-size: 1rem; font-weight: 700; color: var(--vinho); }
+    .estoque-mari-tipo { font-size: 0.68rem; color: var(--tinta-2); text-transform: uppercase; }
+    .estoque-mari-corpo { display: none; padding-top: 10px; border-top: 1px dashed var(--vinho-claro); margin-top: 6px; }
+    .estoque-mari-corpo.aberto { display: block; }
+
+    .tab-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .tab-btn {
+      flex: 1; padding: 8px 6px !important; margin-top: 0 !important;
+      font-size: 0.82rem !important; border-radius: 8px;
+      box-shadow: none !important; min-width: 80px;
+    }
+    .tab-btn.ativo { background: var(--vinho) !important; color: white !important; border-color: var(--vinho) !important; }
+
+    .resumo-venda-box {
+      background: var(--verde-cl); border: 2px solid var(--verde);
+      border-radius: 10px; padding: 12px; margin-top: 10px;
+      display: none;
+    }
+    .resumo-venda-box.visivel { display: block; }
+    .resumo-linha {
+      display: flex; justify-content: space-between;
+      font-family: var(--fonte-decorativa); font-size: 1rem;
+      color: var(--tinta);
+      padding: 3px 0; border-bottom: 1px dashed rgba(45,106,79,0.3);
+    }
+    .resumo-linha:last-child { border: none; font-size: 1.1rem; font-weight: 700; color: var(--verde); }
+
+    .divisor { border: none; border-top: 2px dashed rgba(124,29,42,0.3); margin: 20px 0; }
+
+    .meta-card {
+      background: white; border: 2px solid var(--vinho);
+      border-radius: 10px; padding: 14px; margin-bottom: 12px;
+      box-shadow: 2px 2px 0 var(--vinho-claro);
+    }
+
+    .meta-progresso-bar  { background: var(--vinho-claro); border-radius: 20px; height: 10px; margin-top: 8px; overflow: hidden; }
+    .meta-progresso-fill { background: var(--vinho); height: 100%; border-radius: 20px; transition: width 0.6s ease; }
+
+    .btn-file-pauta {
+      display: block; width: 100%;
+      border: 2px dashed var(--vinho); border-radius: 8px;
+      padding: 10px; text-align: center;
+      font-family: var(--fonte-decorativa); font-size: 1rem; font-weight: 700;
+      margin-top: 10px; cursor: pointer;
+      color: var(--vinho); background: var(--vinho-claro);
+    }
+
+    .img-preview {
+      max-width: 100%; max-height: 140px; border-radius: 8px;
+      border: 2px solid var(--vinho); display: none;
+      object-fit: cover; margin: 8px auto;
+    }
+
+    #modalOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 9999;
+      align-items: center; justify-content: center;
+    }
+    #modalOverlay.ativo { display: flex; }
+    #modalBox {
+      background: var(--papel); border: 3px solid var(--vinho);
+      border-radius: 14px; padding: 24px 20px;
+      max-width: 300px; width: 90%; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #modalBox h3 { font-family: var(--fonte-decorativa); font-size: 1.3rem; color: var(--vinho); margin-bottom: 10px; }
+    #modalBox p  { font-size: 0.88rem; color: var(--tinta-2); margin-bottom: 16px; line-height: 1.5; }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btns button { flex: 1; margin-top: 0; }
+
+    .acesso-section {
+      background: white; border: 2px solid var(--vinho);
+      border-radius: 12px; padding: 16px; margin-bottom: 14px;
+    }
+    .acesso-section h3 { margin-bottom: 12px; font-size: 1rem; color: var(--vinho); font-family: var(--fonte-decorativa); font-weight: 700; }
+    .fs-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .fs-btn  { flex: 1; min-width: 60px; padding: 10px 8px !important; margin-top: 0 !important; font-size: 0.9rem !important; }
+    .fs-btn.ativo { background: var(--vinho) !important; color: white !important; }
+
+    .chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px; }
+    .chip-vinho { background: var(--vinho-claro); color: var(--vinho); }
+    .chip-verde { background: var(--verde-cl);   color: var(--verde);  }
+    .chip-azul  { background: var(--azul-cl);    color: var(--azul);   }
+    .chip-roxo  { background: var(--roxo-cl);    color: var(--roxo);   }
+    .chip-salgado { background: var(--salgado-cl); color: var(--salgado); }
+
+    .admin-only { display: none; }
+
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--vinho); cursor: pointer; margin-right: 6px; }
+
+    .badge-vazio {
+      text-align: center; padding: 20px 10px;
+      font-family: 'Source Serif 4',serif; font-style: italic;
+      font-size: 0.85rem; color: var(--tinta-2);
+    }
+
+    /* Salgados específico */
+    .salgado-banner {
+      background: var(--salgado-cl);
+      border: 2px solid var(--salgado);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-family: var(--fonte-decorativa);
+      font-size: 0.95rem;
+      color: var(--salgado);
+      font-weight: 700;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== Modo offline: faixa de status e tela de pendências ===== */
+    #offBanner {
+      display: none; margin: 0 0 12px; padding: 9px 12px; border-radius: 8px;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+      text-align: center; cursor: pointer; border: 2px dashed; line-height: 1.3;
+    }
+    #offBanner.off  { background: var(--laranja-cl); color: var(--laranja); border-color: var(--laranja); }
+    #offBanner.pend { background: var(--dourado-cl); color: var(--dourado); border-color: var(--dourado); }
+    #offBanner.sync { background: var(--azul-cl);    color: var(--azul);    border-color: var(--azul); }
+    .off-item-erro { font-size: 0.72rem; color: #c0392b; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div id="modalOverlay">
+  <div id="modalBox">
+    <h3>⚠️ Confirmar exclusão</h3>
+    <p id="modalTexto">Tem certeza que deseja excluir este item?</p>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-danger" id="btnConfirmarExclusao">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="mainContainer">
+
+  <div id="barraAcesso" style="display:none;">
+    <span>Texto:</span>
+    <button class="btn-acesso" onclick="ajustarFonte(-1)" title="Diminuir">A−</button>
+    <span id="fsIndicador">100%</span>
+    <button class="btn-acesso" onclick="ajustarFonte(1)" title="Aumentar">A+</button>
+    <button class="btn-acesso btn-acesso-dark" onclick="toggleDark()" id="btnDark" title="Escuro">🌙</button>
+    <button class="btn-acesso btn-acesso-dark" onclick="mudarJanela('screenAcesso', false)" title="Config">⚙️</button>
+  </div>
+
+  <div class="container-inner">
+    <!-- Faixa de status offline (toque para ver os registros pendentes) -->
+    <div id="offBanner" onclick="offAbrirFila()"></div>
+    <div id="statusMsg" class="msg"></div>
+
+    <!-- ======== CARREGANDO ======== -->
+    <div id="screenCarregando" class="screen" style="text-align:center; padding-top:60px;">
+      <div style="font-size:3rem; margin-bottom:20px;">🦀</div>
+      <div style="font-family: var(--fonte-decorativa); font-size:1.4rem; color:var(--vinho); font-weight:700; margin-bottom:10px;">Carregando dados…</div>
+      <div style="font-family:'Source Serif 4',serif; font-size:0.82rem; color:var(--tinta-2); font-style:italic; margin-bottom:30px;">Aguarde um momento</div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--vinho);animation:pulso 1s ease-in-out infinite;"></div>
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--vinho);animation:pulso 1s ease-in-out 0.2s infinite;"></div>
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--vinho);animation:pulso 1s ease-in-out 0.4s infinite;"></div>
+      </div>
+      <style>@keyframes pulso{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}</style>
+    </div>
+
+    <!-- ======== LOGIN ======== -->
+    <div id="screenLogin" class="screen active" style="text-align:center; padding-top:16px;">
+      <div id="logoContainer" class="logo-app" style="background:white; display:flex; align-items:center; justify-content:center; font-size:48px; overflow:hidden;">
+        <img id="logoPrincipal" src="https://cdn-icons-png.flaticon.com/512/3060/3060790.png"
+             style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.style.display='none'; document.getElementById('logoContainer').innerText='🦀'">
+      </div>
+      <div class="titulo-capa">Caderneta de<br>Gestão</div>
+      <div class="subtitulo-capa">App do Pescado · AMQMI</div>
+      <div style="margin:28px 0 4px;">
+        <label>Chave de Acesso</label>
+        <input type="text" id="txtLoginChaveAcesso" placeholder="Somente números" inputmode="numeric" maxlength="20">
+      </div>
+      <button id="btnLogin" onclick="login()">Entrar →</button>
+      <p style="font-family:'Source Serif 4',serif; font-style:italic; font-size:0.75rem; color:var(--tinta-2); margin-top:20px;">
+        Associação de Mulheres Quilombolas e Marisqueiras<br>do Vale do Iguape — Cachoeira, BA
+      </p>
+    </div>
+
+    <!-- ======== MENU ======== -->
+    <div id="screenMenu" class="screen">
+      <div class="user-bar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img id="imgUserSession" src="" class="user-avatar"
+               onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
+          <div>
+            <div class="user-nome" id="lblNomeUsuario">…</div>
+            <div class="user-tipo" id="lblTipoUsuario">…</div>
+          </div>
+        </div>
+        <button onclick="logout()" style="width:auto; padding:6px 14px; margin:0; font-size:0.9rem; box-shadow:2px 2px 0 var(--vinho);">Sair</button>
+      </div>
+
+      <img id="imgBannerApp" class="banner-inicial" src="" onerror="this.style.display='none'">
+
+      <div id="newsContainer" class="noticias-container">
+        <div class="noticias-titulo">📢 Avisos e Notícias</div>
+        <div id="listaNoticiasDinamica" style="font-size:0.82rem; color:var(--tinta-2);">Carregando…</div>
+      </div>
+
+      <div class="menu-section-label">Operações</div>
+      <div class="menu-grid">
+        <div class="menu-card" onclick="mudarJanela('screenEntrada',false)">
+          <div class="mc-icon">🦀</div>
+          <div class="mc-label">Produção</div>
+          <div class="mc-desc">Registrar coleta</div>
+        </div>
+        <div class="menu-card laranja" onclick="mudarJanela('screenProducao',false)">
+          <div class="mc-icon">⚙️</div>
+          <div class="mc-label">Beneficiar</div>
+          <div class="mc-desc">Beneficiar produto</div>
+        </div>
+        <div class="menu-card salgado" onclick="mudarJanela('screenSalgados',false)">
+          <div class="mc-icon">🥟</div>
+          <div class="mc-label">Processados</div>
+          <div class="mc-desc">Registrar produção</div>
+        </div>
+        <div class="menu-card verde" onclick="abrirTelaVenda()">
+          <div class="mc-icon">🛒</div>
+          <div class="mc-label">Venda</div>
+          <div class="mc-desc">Registrar saída</div>
+        </div>
+        <div class="menu-card azul menu-card-fullwidth" onclick="abrirMeuEstoque()">
+          <div class="mc-icon">📦</div>
+          <div class="mc-label">Meu Estoque</div>
+          <div class="mc-desc">Minha posição</div>
+        </div>
+      </div>
+
+      <div class="menu-section-label">Análise</div>
+      <div class="menu-grid">
+        <div class="menu-card azul" onclick="mudarJanela('screenRelatorios',true)">
+          <div class="mc-icon">📊</div>
+          <div class="mc-label">Registros</div>
+          <div class="mc-desc">Produção e vendas</div>
+        </div>
+        <div class="menu-card dourado" onclick="mudarJanela('screenMetas',false)">
+          <div class="mc-icon">🎯</div>
+          <div class="mc-label">Metas</div>
+          <div class="mc-desc">Painel de metas</div>
+        </div>
+      </div>
+
+      <div class="admin-only" id="menuAdminArea">
+        <hr class="divisor">
+        <div class="menu-section-label">Administração</div>
+        <div class="menu-grid">
+          <div class="menu-card" onclick="abrirCadastroUsuario()">
+            <div class="mc-icon">👩‍👩‍👧</div>
+            <div class="mc-label">Equipe</div>
+            <div class="mc-desc">Gerenciar pessoas</div>
+          </div>
+          <div class="menu-card roxo" onclick="abrirEstoqueAdmin()">
+            <div class="mc-icon">🏭</div>
+            <div class="mc-label">Estoque Geral</div>
+            <div class="mc-desc">Visão completa</div>
+          </div>
+          <div class="menu-card azul" onclick="mudarJanela('screenCadNoticia',false)">
+            <div class="mc-icon">📢</div>
+            <div class="mc-label">Avisos</div>
+            <div class="mc-desc">Postar notícia</div>
+          </div>
+          <div class="menu-card" onclick="mudarJanela('screenCadLogo',false)">
+            <div class="mc-icon">🏷️</div>
+            <div class="mc-label">Logo</div>
+            <div class="mc-desc">Logomarca</div>
+          </div>
+          <div class="menu-card verde" onclick="mudarJanela('screenCadProduto',false)">
+            <div class="mc-icon">🐟</div>
+            <div class="mc-label">Produto</div>
+            <div class="mc-desc">Cadastrar item</div>
+          </div>
+          <div class="menu-card salgado" onclick="mudarJanela('screenCadSalgado',false)">
+            <div class="mc-icon">🥟</div>
+            <div class="mc-label">Tipo Processado</div>
+            <div class="mc-desc">Cadastrar processado</div>
+          </div>
+          <div class="menu-card dourado" onclick="mudarJanela('screenCadComprador',false)">
+            <div class="mc-icon">🤝</div>
+            <div class="mc-label">Comprador</div>
+            <div class="mc-desc">Destino fixo</div>
+          </div>
+          <div class="menu-card dourado" onclick="mudarJanela('screenCadMeta',false)">
+            <div class="mc-icon">🎯</div>
+            <div class="mc-label">Nova Meta</div>
+            <div class="mc-desc">Criar objetivo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== CONFIGURAÇÕES ======== -->
+    <div id="screenAcesso" class="screen">
+      <h2>⚙️ Configurações</h2>
+      <div class="acesso-section">
+        <h3>🔤 Tamanho do Texto</h3>
+        <p style="font-size:0.82rem; color:var(--tinta-2); margin-bottom:12px;">Escolha o tamanho ideal para você.</p>
+        <div class="fs-btns">
+          <button class="fs-btn" onclick="definirFonte(12)">Pequeno<br><span style="font-size:0.65rem;">12px</span></button>
+          <button class="fs-btn" onclick="definirFonte(14)">Normal<br><span style="font-size:0.65rem;">14px</span></button>
+          <button class="fs-btn" onclick="definirFonte(16)">Médio<br><span style="font-size:0.65rem;">16px</span></button>
+          <button class="fs-btn" onclick="definirFonte(18)">Grande<br><span style="font-size:0.65rem;">18px</span></button>
+          <button class="fs-btn" onclick="definirFonte(21)">Extra<br><span style="font-size:0.65rem;">21px</span></button>
+        </div>
+      </div>
+      <div class="acesso-section">
+        <h3>🌙 Modo Escuro</h3>
+        <p style="font-size:0.82rem; color:var(--tinta-2); margin-bottom:12px;">Tela escura para à noite.</p>
+        <button onclick="toggleDark()" id="btnDarkPainel" style="margin-top:0;">🌙 Alternar Modo Escuro</button>
+      </div>
+      <div class="acesso-section">
+        <h3>✍️ Estilo da Letra</h3>
+        <p style="font-size:0.82rem; color:var(--tinta-2); margin-bottom:12px;">Troque entre a letra manuscrita do caderno e uma letra padrão, mais fácil de ler.</p>
+        <div class="fs-btns">
+          <button class="fs-btn" id="btnFonteCaveat" onclick="definirTipoLetra('caveat')">✒️ Manuscrita<br><span style="font-size:0.65rem;">estilo caderno</span></button>
+          <button class="fs-btn" id="btnFontePadrao" onclick="definirTipoLetra('padrao')">🔤 Padrão<br><span style="font-size:0.65rem;">mais legível</span></button>
+        </div>
+      </div>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== PRODUÇÃO (MARISCAGEM / COLETA) ======== -->
+    <div id="screenEntrada" class="screen">
+      <h2>🦀 Registro de Produção</h2>
+      <label>Quando foi coletado?</label>
+      <input type="date" id="entDataRetro">
+      <div id="blocoMarisqueiraEnt" style="display:none;">
+        <label>Quem trouxe?</label>
+        <div id="gridMarisqueirasEnt" class="grid-visual"></div>
+        <input type="hidden" id="entMarisqueiraVal">
+      </div>
+      <label>Qual produto?</label>
+      <div id="gridProdutosEnt" class="grid-visual"></div>
+      <input type="hidden" id="entProdutoVal">
+      <label>Quantidade e medida</label>
+      <div style="display:flex; gap:10px;">
+        <input type="number" step="0.01" id="entQtd" placeholder="Ex: 5.5" style="flex:2;" min="0">
+        <select id="entUnidade" style="flex:1;">
+          <option value="KG">KG</option>
+          <option value="UN">UN</option>
+        </select>
+      </div>
+      <button onclick="adicionarItemCarrinho()" class="btn-secondary" style="border-style:dashed; margin-top:8px;">+ Adicionar à lista</button>
+      <div id="areaCarrinho" class="area-carrinho">
+        <h4>🧺 Lista de itens:</h4>
+        <div id="listaCarrinho"></div>
+      </div>
+      <button id="btnConfirmarEntrada" onclick="salvarEntradaForm()" class="btn-success" style="margin-top:16px;">✔ Confirmar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== BENEFICIAMENTO ======== -->
+    <div id="screenProducao" class="screen">
+      <h2>⚙️ Beneficiamento</h2>
+      <div id="blocoMarisqueiraBenef" style="display:none;">
+        <label>Beneficiado por:</label>
+        <div id="gridMarisqueirasProc" class="grid-visual"></div>
+        <input type="hidden" id="procMarisqueiraVal">
+      </div>
+      <label>Quando foi beneficiado?</label>
+      <input type="date" id="procDataRetro">
+      <label>Marisco bruto (origem):</label>
+      <div id="gridOrigemProc" class="grid-visual"></div>
+      <input type="hidden" id="procOrigemVal">
+      <label>Peso bruto (KG):</label>
+      <input type="number" step="0.01" id="procBruto" oninput="calcPerdas()" placeholder="0.00" min="0">
+      <label>Produto final beneficiado:</label>
+      <div id="gridFimProc" class="grid-visual"></div>
+      <input type="hidden" id="procProdFinalVal">
+      <label>Peso beneficiado (KG):</label>
+      <input type="number" step="0.01" id="procLimpo" oninput="calcPerdas()" placeholder="0.00" min="0">
+      <label>Perdas (automático):</label>
+      <input type="number" id="procPerdas" readonly style="color:var(--laranja); font-weight:700;" placeholder="0.00">
+      <button onclick="salvarProducaoForm()" class="btn-success">✔ Gravar Beneficiamento</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== SALGADOS — PRODUÇÃO ======== -->
+    <div id="screenSalgados" class="screen">
+      <h2>🥟 Produção de Processados</h2>
+      <div class="salgado-banner">
+        🥟 Registre aqui os produtos processados (salgados, caldos, conservas…).
+      </div>
+      <div id="blocoMarisqueiraSalg" style="display:none;">
+        <label>Qual produtora?</label>
+        <div id="gridMarisqueirasSalg" class="grid-visual"></div>
+        <input type="hidden" id="salgMarisqueiraVal">
+      </div>
+      <label>Quando foram produzidos?</label>
+      <input type="date" id="salgDataRetro">
+      <label>Tipo de produto processado:</label>
+      <div id="gridSalgadosProd" class="grid-visual"></div>
+      <input type="hidden" id="salgTipoVal">
+      <label>Quantidade produzida (<span id="salgUnidLabel">selecione o tipo</span>):</label>
+      <input type="number" step="0.01" id="salgQtd" placeholder="Ex: 50" min="0.01">
+      <label>Observação (opcional):</label>
+      <input type="text" id="salgObs" placeholder="Ex: Para evento da associação">
+      <button onclick="salvarSalgadoForm()" class="btn-success">✔ Registrar Produção</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== VENDA ======== -->
+    <div id="screenSaida" class="screen">
+      <h2>🛒 Registrar Venda</h2>
+
+      <!-- Seletor de vendedor (só admin): lista todas as pessoas + Associação -->
+      <div id="divVendedorVenda" style="display:none;">
+        <label>Quem está vendendo?</label>
+        <div id="gridVendedorVenda" class="grid-visual"></div>
+        <input type="hidden" id="saiVendedorVal">
+      </div>
+
+      <label>Quando foi a venda?</label>
+      <input type="date" id="saiDataRetro">
+
+      <label>O que está vendendo?</label>
+      <div class="tab-row" style="margin-bottom:6px;">
+        <button class="tab-btn ativo" id="tabVendaPescado" onclick="alternarTipoVenda('pescado')">🦀 Pescado</button>
+        <button class="tab-btn" id="tabVendaSalgado" onclick="alternarTipoVenda('salgado')">🥟 Processado</button>
+      </div>
+
+      <!-- Pescado: mostra só o beneficiado em estoque -->
+      <div id="divProdutosVenda">
+        <p id="lblEstoqueVendaInfo" style="font-size:0.78rem; color:var(--tinta-2); font-style:italic; margin-bottom:4px;">Apenas produtos com estoque beneficiado disponível</p>
+        <div id="gridProdutosSai" class="grid-visual"></div>
+        <input type="hidden" id="saiProdutoVal">
+      </div>
+
+      <!-- Salgado: mostra só os salgados em estoque -->
+      <div id="divSalgadosVenda" style="display:none;">
+        <p style="font-size:0.78rem; color:var(--tinta-2); font-style:italic; margin-bottom:4px;">Apenas produtos processados com estoque disponível</p>
+        <div id="gridSalgadosSai" class="grid-visual"></div>
+        <input type="hidden" id="saiSalgadoVal">
+      </div>
+
+      <label>Para quem?</label>
+      <div id="gridCompradoresSai" class="grid-visual"></div>
+      <input type="hidden" id="saiDestinoVal">
+      <div id="divNomeEsporadico" style="display:none;">
+        <label>Nome do comprador:</label>
+        <input type="text" id="saiNomeEsporadico" placeholder="Nome">
+      </div>
+      <label>Quantidade:</label>
+      <div style="display:flex; gap:10px;">
+        <input type="number" step="0.01" id="saiQtd" oninput="calcVenda()" style="flex:2;" placeholder="0.00" min="0">
+        <div id="saiUnidadeLabel" style="flex:1; text-align:center; font-weight:700; color:var(--vinho); border:2px dashed var(--vinho); border-radius:8px; padding:12px 4px; font-family: var(--fonte-decorativa); font-size:1.1rem;">—</div>
+        <input type="hidden" id="saiUnidade" value="">
+      </div>
+      <label>Valor unitário (R$):</label>
+      <input type="number" step="0.01" id="saiValorUnit" oninput="calcVenda()" placeholder="0.00" min="0">
+      <div class="resumo-venda-box" id="resumoVenda">
+        <div class="resumo-linha"><span>Quantidade</span><span id="rv_qtd">—</span></div>
+        <div class="resumo-linha"><span>Preço unitário</span><span id="rv_unit">—</span></div>
+        <div class="resumo-linha"><span>💰 Total</span><span id="rv_total">—</span></div>
+      </div>
+      <button onclick="salvarSaidaForm()" class="btn-success" style="margin-top:12px;">✔ Confirmar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== MEU ESTOQUE ======== -->
+    <div id="screenEstoque" class="screen">
+      <h2>📦 Meu Estoque</h2>
+      <p style="font-size:0.8rem; color:var(--tinta-2); margin-bottom:14px; font-style:italic;">
+        Itens registrados por você.
+      </p>
+      <div id="conteudoEstoque">
+        <p class="badge-vazio">Carregando…</p>
+      </div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:20px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== ESTOQUE ADMIN ======== -->
+    <div id="screenEstoqueAdmin" class="screen">
+      <h2>🏭 Estoque Geral</h2>
+      <div class="tab-row">
+        <button class="tab-btn ativo" id="tabAssocBtn" onclick="mostrarTabEstoque('associacao')">🤝 Associação</button>
+        <button class="tab-btn" id="tabMariBtn" onclick="mostrarTabEstoque('marisqueiras')">👩 Por Pessoa</button>
+      </div>
+      <div id="tabAssocConteudo">
+        <div id="conteudoEstoqueAssoc"><p class="badge-vazio">Carregando…</p></div>
+      </div>
+      <div id="tabMariConteudo" style="display:none;">
+        <div id="conteudoEstoquePorMari"><p class="badge-vazio">Carregando…</p></div>
+      </div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:20px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== EDITAR MEU ESTOQUE ======== -->
+    <div id="screenMeuEstoqueManual" class="screen">
+      <h2>📦 Meu Estoque</h2>
+      <div id="listaMeuEstoque"><p class="badge-vazio">Carregando…</p></div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:10px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== METAS ======== -->
+    <div id="screenMetas" class="screen">
+      <h2>🎯 Metas Ativas</h2>
+      <div id="listaMetasDinamica"><p class="badge-vazio">Nenhuma meta.</p></div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:20px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== NOVA META ======== -->
+    <div id="screenCadMeta" class="screen">
+      <h2>🎯 Nova Meta</h2>
+      <label>Nome:</label>
+      <input type="text" id="cadMetaNome" placeholder="Ex: Produção julho">
+      <label>Objetivo:</label>
+      <input type="number" step="0.01" id="cadMetaObjetivo" placeholder="Ex: 500" min="0">
+      <label>Unidade:</label>
+      <select id="cadMetaUnidade">
+        <option value="KG">KG</option>
+        <option value="UN">UN</option>
+        <option value="R$">R$</option>
+      </select>
+      <button onclick="salvarMetaForm()" class="btn-success">✔ Registrar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== REGISTROS / RELATÓRIOS ======== -->
+    <div id="screenRelatorios" class="screen">
+      <h2>📊 Registros de Produção</h2>
+      <label>Tipo:</label>
+      <select id="relTipo" onchange="verificarFiltroRelatorio()">
+        <option value="entrada">Registros de Coleta</option>
+        <option value="salgado">Produção de Processados</option>
+        <option value="saida">Vendas Realizadas</option>
+      </select>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;"><label>Data início:</label><input type="date" id="relDataIni"></div>
+        <div style="flex:1;"><label>Data fim:</label><input type="date" id="relDataFim"></div>
+      </div>
+      <div id="divFiltroMari">
+        <label>Produtora:</label>
+        <select id="relCpfMari"><option value="">Todas</option></select>
+      </div>
+      <div id="divFiltroComprador" style="display:none;">
+        <label>Comprador:</label>
+        <select id="relCompradorFiltro" onchange="verificarFiltroCompradorEsporadico()">
+          <option value="">Todos</option>
+          <option value="__ESPORADICO__">🕐 Comprador Esporádico</option>
+        </select>
+        <div id="divRelNomeEsporadico" style="display:none; margin-top:8px;">
+          <label>Nome do esporádico (opcional):</label>
+          <input type="text" id="relNomeEsporadico" placeholder="Deixe em branco pra ver todos">
+        </div>
+      </div>
+      <button onclick="puxarRelatorio()" class="btn-success" style="margin-top:12px;">🔎 Buscar</button>
+      <button id="btnGerarPdf" onclick="gerarPdfRelatorio()" class="btn-secondary" style="display:none;">📄 Gerar PDF</button>
+      <div class="table-container">
+        <table id="tblRelatorio">
+          <thead><tr id="tblHeader"></tr></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:20px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== GERENCIAR EQUIPE ======== -->
+    <div id="screenCadUsuario" class="screen">
+      <h2>👩‍👩‍👧 Gerenciar Equipe</h2>
+      <div id="gridEquipeCompleta" class="grid-visual"></div>
+      <div id="blocoFormularioUsuario" style="display:none; border-top:2px dashed var(--vinho); margin-top:16px; padding-top:16px;">
+        <h3 id="tituloFormUsuario">✏️ Dados</h3>
+        <label>Chave de Acesso:</label>
+        <input type="text" id="cadUsrChaveAcesso" inputmode="numeric" maxlength="20">
+        <label>Nome:</label>
+        <input type="text" id="cadUsrNome">
+        <label>Telefone:</label>
+        <input type="text" id="cadUsrTel" inputmode="tel">
+        <label>Perfil:</label>
+        <select id="cadUsrTipo">
+          <option value="Marisqueira">Marisqueira</option>
+          <option value="Administrativo">Administrativo</option>
+        </select>
+        <img id="previewUsrFoto" class="img-preview" style="border-radius:50%; width:90px; height:90px;">
+        <label for="cadUsrFile" class="btn-file-pauta">📷 Foto</label>
+        <input type="file" id="cadUsrFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewUsrFoto','tempUsrFoto')">
+        <input type="hidden" id="tempUsrFoto">
+        <input type="hidden" id="cadUsrChaveAcessoOriginal">
+        <button onclick="salvarUsuarioForm()" class="btn-success">Gravar</button>
+        <button id="btnExcluirUsuario" class="btn-danger" onclick="confirmarExclusaoUsuario()" style="display:none;">🗑 Excluir</button>
+        <button onclick="ocultarFormularioUsuario()" class="btn-secondary" style="border-style:dashed;">Cancelar</button>
+      </div>
+      <button onclick="voltarMenu()" class="btn-secondary" style="margin-top:14px;">↩ Voltar</button>
+    </div>
+
+    <!-- ======== LOGO ======== -->
+    <div id="screenCadLogo" class="screen">
+      <h2>🏷️ Logomarca</h2>
+      <p style="font-size:0.82rem; color:var(--tinta-2); margin-bottom:14px;">Substitua o ícone padrão.</p>
+      <img id="previewLogoForm" class="img-preview" style="border-radius:50%; width:100px; height:100px;">
+      <label for="cadLogoFile" class="btn-file-pauta">📷 Escolher Logo</label>
+      <input type="file" id="cadLogoFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewLogoForm','tempLogoFoto')">
+      <input type="hidden" id="tempLogoFoto">
+      <button onclick="salvarLogoForm()" class="btn-success">Atualizar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== AVISOS ======== -->
+    <div id="screenCadNoticia" class="screen">
+      <h2>📢 Postar Aviso</h2>
+      <div id="listaNoticiasCadastradas" style="margin-bottom:16px;"></div>
+      <hr class="divisor">
+      <h3 style="margin-bottom:8px;">Novo aviso:</h3>
+      <label>Título:</label>
+      <input type="text" id="cadNotiTitulo" placeholder="Assunto">
+      <label>Mensagem:</label>
+      <input type="text" id="cadNotiMsg" placeholder="Detalhes">
+      <label>Válido até (3 dias por padrão):</label>
+      <input type="date" id="cadNotiValidade">
+      <img id="previewNotiFoto" class="img-preview">
+      <label for="cadNotiFile" class="btn-file-pauta">📎 Anexar imagem</label>
+      <input type="file" id="cadNotiFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewNotiFoto','tempNotiFoto')">
+      <input type="hidden" id="tempNotiFoto">
+      <div style="margin-top:14px; background:var(--vinho-claro); padding:10px; border-radius:8px; border:1px dashed var(--vinho);">
+        <label style="margin-top:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="cadNotiIsBanner">
+          Usar como banner?
+        </label>
+      </div>
+      <button onclick="salvarNoticiaForm()" class="btn-success" style="margin-top:14px;">Publicar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== PRODUTO ======== -->
+    <div id="screenCadProduto" class="screen">
+      <h2>🐟 Cadastrar Produto</h2>
+      <div id="listaProdutosCadastrados" style="margin-bottom:16px;"></div>
+      <hr class="divisor">
+      <h3 style="margin-bottom:8px;">Novo produto:</h3>
+      <label>Nome:</label>
+      <input type="text" id="cadProdNome" placeholder="Ex: Sururu">
+      <label>Tipo:</label>
+      <select id="cadProdTipo">
+        <option value="Marisco">Marisco</option>
+        <option value="Peixe">Peixe</option>
+        <option value="Outros">Outros</option>
+      </select>
+      <label>Unidade:</label>
+      <select id="cadProdUnid">
+        <option value="KG">Quilos (KG)</option>
+        <option value="UN">Unidades (UN)</option>
+        <option value="DZ">Dúzia (DZ)</option>
+        <option value="G">Gramas (G)</option>
+        <option value="L">Litros (L)</option>
+        <option value="ML">Mililitros (ML)</option>
+      </select>
+      <label>Valor (R$):</label>
+      <input type="number" step="0.01" id="cadProdValor" placeholder="0.00" min="0">
+      <img id="previewProdFoto" class="img-preview" style="border-radius:50%; width:90px; height:90px;">
+      <label for="cadProdFile" class="btn-file-pauta">📷 Foto</label>
+      <input type="file" id="cadProdFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewProdFoto','tempProdFoto')">
+      <input type="hidden" id="tempProdFoto">
+      <button onclick="salvarProdutoForm()" class="btn-success">Gravar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== CADASTRO DE SALGADOS (ADMIN) ======== -->
+    <div id="screenCadSalgado" class="screen">
+      <h2>🥟 Tipos de Produtos Processados</h2>
+      <p style="font-size:0.82rem; color:var(--tinta-2); margin-bottom:10px; font-style:italic;">Somente administradores podem cadastrar tipos de produtos processados.</p>
+      <div id="listaSalgadosCadastrados" style="margin-bottom:16px;"></div>
+      <hr class="divisor">
+      <h3 style="margin-bottom:8px;">Novo tipo de produto processado:</h3>
+      <label>Nome:</label>
+      <input type="text" id="cadSalgNome" placeholder="Ex: Coxinha de Siri">
+      <label>Descrição (opcional):</label>
+      <input type="text" id="cadSalgDesc" placeholder="Ex: Recheada com sururu">
+      <label>Unidade padrão:</label>
+      <select id="cadSalgUnid">
+        <option value="UN">Unidades (UN)</option>
+        <option value="DZ">Dúzia (DZ)</option>
+        <option value="KG">Quilos (KG)</option>
+        <option value="G">Gramas (G)</option>
+        <option value="L">Litros (L)</option>
+        <option value="ML">Mililitros (ML)</option>
+      </select>
+      <label>Valor unitário (R$):</label>
+      <input type="number" step="0.01" id="cadSalgValor" placeholder="0.00" min="0">
+      <img id="previewSalgFoto" class="img-preview" style="border-radius:8px; width:120px; height:90px;">
+      <label for="cadSalgFile" class="btn-file-pauta">📷 Foto</label>
+      <input type="file" id="cadSalgFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewSalgFoto','tempSalgFoto')">
+      <input type="hidden" id="tempSalgFoto">
+      <button onclick="salvarSalgadoCadForm()" class="btn-success">Gravar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== COMPRADOR ======== -->
+    <div id="screenCadComprador" class="screen">
+      <h2>🤝 Cadastrar Comprador</h2>
+      <div id="listaCompradoresCadastrados" style="margin-bottom:16px;"></div>
+      <hr class="divisor">
+      <h3 style="margin-bottom:8px;">Novo comprador:</h3>
+      <label>Nome:</label>
+      <input type="text" id="cadCompNome" placeholder="Ex: Mercado Central">
+      <label>Documento (opcional):</label>
+      <input type="text" id="cadCompDoc" placeholder="Chave de Acesso/CNPJ">
+      <label>Telefone (opcional):</label>
+      <input type="text" id="cadCompTel" inputmode="tel" placeholder="Opcional">
+      <button onclick="salvarCompradorForm()" class="btn-success">Gravar</button>
+      <button onclick="voltarMenu()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+    <!-- ======== PENDÊNCIAS DE ENVIO (modo offline) ======== -->
+    <div id="screenFila" class="screen">
+      <h2>⏳ Aguardando envio</h2>
+      <p style="font-size:0.8rem; color:var(--tinta-2); margin-bottom:14px; font-style:italic;">
+        Registros feitos sem internet. Eles são enviados sozinhos quando a conexão voltar.
+      </p>
+      <div id="offListaFila"></div>
+      <button onclick="offEnviarAgora()" class="btn-success">🔄 Enviar agora</button>
+      <button onclick="offVoltarDaFila()" class="btn-secondary">↩ Voltar</button>
+    </div>
+
+  </div><!-- /container-inner -->
+</div><!-- /mainContainer -->
+
+<script>
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+var cacheApp = {};
+var userSession = null;
+var carrinhoEntradas = [];
+var _excluirCallback = null;
+var tipoVendaAtual = 'pescado';
+var FOTO_PESSOA  = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+var FOTO_PRODUTO = "https://cdn-icons-png.flaticon.com/512/2983/2983726.png";
+var FOTO_SALGADO = "https://cdn-icons-png.flaticon.com/512/3174/3174810.png";
+var FONTES = [12, 14, 16, 18, 21];
+var fonteAtual = 16;
+
+// ============================================================
+// MODO OFFLINE — fila de envio, cache local e sincronização
+// ============================================================
+var OFF = {
+  FILA:   "cg_fila_v1",       // registros aguardando envio
+  APP:    "cg_cache_app_v1",  // cadastros (produtos, compradores, equipe…)
+  LOGINS: "cg_logins_v1",     // logins já feitos neste aparelho
+  EST:    "cg_est_v1_",       // estoque por pessoa (+ "ASSOCIACAO")
+  MAX_TENT: 5,                // tentativas antes de marcar como "travado"
+  LOTE: 10                    // quantos registros por envio
+};
+var offSincronizando = false;
+var OFF_VAZIO = { marisqueiras: [], todosUsuarios: [], produtos: [], salgados: [], compradores: [], metas: [], noticias: [], bannerUrl: "", logoUrl: "" };
+
+// ---------- armazenamento local ----------
+function offLer(chave, padrao) {
+  try {
+    var v = localStorage.getItem(chave);
+    return v ? JSON.parse(v) : padrao;
+  } catch (e) { return padrao; }
+}
+
+function offGravar(chave, valor) {
+  try { localStorage.setItem(chave, JSON.stringify(valor)); return true; }
+  catch (e) { return false; }
+}
+
+function offId() {
+  return "OP-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+function offFila() { return offLer(OFF.FILA, []); }
+
+function offExigeInternet() {
+  if (navigator.onLine) return true;
+  alertBox("📴 Esta ação precisa de internet. Conecte-se e tente de novo.", true);
+  return false;
+}
+
+// Editar estoque (valor absoluto) exige internet e nada pendente na fila
+function offExigeSincronizado() {
+  if (!offExigeInternet()) return false;
+  if (offFila().length || offSincronizando) {
+    alertBox("⏳ Há registros aguardando envio. Espere o envio terminar antes de editar o estoque.", true);
+    return false;
+  }
+  return true;
+}
+
+// ---------- fila ----------
+function offEnfileirar(fn, payload, rotulo) {
+  var fila = offFila();
+  var item = {
+    id: offId(),
+    fn: fn,
+    payload: payload,
+    rotulo: rotulo,
+    criadoEm: Date.now(),
+    tentativas: 0,
+    usuario: (userSession && userSession.nome) || ""
+  };
+  fila.push(item);
+  if (!offGravar(OFF.FILA, fila)) {
+    alertBox("Não foi possível guardar no aparelho (armazenamento cheio). Nada foi registrado.", true);
+    return null;
+  }
+  offAtualizarBanner();
+  return item;
+}
+
+// Envia a fila ao servidor. cb recebe { resultados: {id: {status,msg}}, ... }
+function offSincronizar(cb) {
+  cb = cb || function () {};
+  if (offSincronizando) return cb({ ocupado: true, resultados: {} });
+  if (!navigator.onLine) return cb({ semRede: true, resultados: {} });
+
+  var lote = offFila()
+    .filter(function (it) { return (it.tentativas || 0) < OFF.MAX_TENT; })
+    .slice(0, OFF.LOTE);
+  if (!lote.length) return cb({ vazio: true, resultados: {} });
+
+  offSincronizando = true;
+  offAtualizarBanner();
+
+  var terminou = false;
+  var guarda = setTimeout(function () {
+    if (terminou) return;
+    terminou = true;
+    offSincronizando = false;
+    offAtualizarBanner();
+    cb({ semRede: true, resultados: {} });
+  }, 60000);
+
+  AppAPI.run
+    .withSuccessHandler(function (res) {
+      if (terminou) return;
+      terminou = true;
+      clearTimeout(guarda);
+
+      var mapa = {};
+      (res || []).forEach(function (r) { mapa[r.id] = r; });
+
+      var restante = [];
+      offFila().forEach(function (it) {
+        var r = mapa[it.id];
+        if (!r) { restante.push(it); return; }
+        if (r.status === "retry") {
+          it.tentativas = (it.tentativas || 0) + 1;
+          it.ultimoErro = r.msg;
+          restante.push(it);
+        }
+        // ok / duplicado / rejeitado → sai da fila
+      });
+      offGravar(OFF.FILA, restante);
+      offSincronizando = false;
+      offAtualizarBanner();
+
+      if (restante.length === 0 && Object.keys(mapa).length) offPrecarregarEstoques();
+      cb({ resultados: mapa, restantes: restante.length });
+
+      var faltam = restante.filter(function (it) {
+        return !mapa[it.id] && (it.tentativas || 0) < OFF.MAX_TENT;
+      }).length;
+      if (faltam) setTimeout(offSincronizarComAviso, 300);
+    })
+    .withFailureHandler(function () {
+      if (terminou) return;
+      terminou = true;
+      clearTimeout(guarda);
+      offSincronizando = false;
+      offAtualizarBanner();
+      cb({ semRede: true, resultados: {} });
+    })
+    .processarFilaOffline(lote.map(function (it) {
+      return { id: it.id, fn: it.fn, payload: it.payload };
+    }));
+}
+
+// Sincroniza em segundo plano e avisa o resultado
+function offSincronizarComAviso() {
+  offSincronizar(function (r) {
+    var ok = 0, rej = 0;
+    Object.keys(r.resultados || {}).forEach(function (id) {
+      var s = r.resultados[id].status;
+      if (s === "ok" || s === "duplicado") ok++;
+      else if (s === "rejeitado") rej++;
+    });
+    if (ok && !rej) alertBox("✅ " + ok + " registro(s) feito(s) offline enviado(s) com sucesso!", false);
+    if (rej) alertBox("⚠️ " + rej + " registro(s) foram recusados pelo servidor (dados inválidos)." + (ok ? " " + ok + " enviado(s)." : ""), true);
+    if (ok && r.restantes === 0 && userSession) recarregarDados();
+  });
+}
+
+// Salva a operação (sempre primeiro no aparelho) e tenta enviar
+function registrarOperacao(fn, payload, rotulo, efeitoLocal, aoTerminar) {
+  var item = offEnfileirar(fn, payload, rotulo);
+  if (!item) { aoTerminar(false, true); return; }
+  try { if (efeitoLocal) efeitoLocal(); } catch (e) { console.error(e); }
+
+  if (!navigator.onLine) {
+    alertBox("📴 Sem internet. Registro guardado no aparelho — será enviado quando a conexão voltar.", false);
+    aoTerminar(false, false);
+    return;
+  }
+
+  offSincronizar(function (r) {
+    var meu = r.resultados && r.resultados[item.id];
+    if (meu && meu.status === "ok") alertBox(meu.msg, false);
+    else if (meu && meu.status === "duplicado") alertBox("Registro enviado!", false);
+    else if (meu && meu.status === "rejeitado") alertBox("⚠️ " + meu.msg, true);
+    else alertBox("💾 Registro guardado no aparelho. Será enviado assim que a conexão permitir.", false);
+    aoTerminar(!!meu, false);
+  });
+}
+
+// ---------- estoque local (para continuar vendendo/produzindo offline) ----------
+function ajustarEstoqueLocal(chave, cat, nome, delta) {
+  if (!chave || !nome || !delta) return;
+  var k = OFF.EST + chave;
+  var est = offLer(k, null) || { inNatura: [], beneficiado: [], salgados: [] };
+  var lista = est[cat] || [];
+  var it = lista.filter(function (x) { return x.nome === nome; })[0];
+  if (it) it.qtd = Math.max(0, (parseFloat(it.qtd) || 0) + delta).toFixed(2);
+  else if (delta > 0) lista.push({ nome: nome, qtd: delta.toFixed(2), foto: "" });
+  est[cat] = lista.filter(function (x) { return (parseFloat(x.qtd) || 0) > 0.001; });
+  offGravar(k, est);
+}
+
+function ajustarEstoqueAssocLocal(nome, delta) {
+  if (!nome || !delta) return;
+  var k = OFF.EST + "ASSOCIACAO";
+  var lista = offLer(k, []);
+  var it = lista.filter(function (x) { return x.nome === nome; })[0];
+  if (it) it.qtd = Math.max(0, (parseFloat(it.qtd) || 0) + delta).toFixed(2);
+  else if (delta > 0) lista.push({ nome: nome, qtd: delta.toFixed(2), foto: "" });
+  offGravar(k, lista.filter(function (x) { return (parseFloat(x.qtd) || 0) > 0.001; }));
+}
+
+// Lê o estoque do servidor (se der) ou do aparelho. cb(dados, veioDoAparelho, existiaCache)
+function offEstoqueDe(chave, cb) {
+  var assoc = (chave === "ASSOCIACAO");
+  var chaveCache = OFF.EST + chave;
+
+  function usarCache() {
+    var c = offLer(chaveCache, null);
+    cb(c || (assoc ? [] : { inNatura: [], beneficiado: [], salgados: [] }), true, c !== null);
+  }
+
+  if (navigator.onLine && !offFila().length && !offSincronizando) {
+    var h = AppAPI.run
+      .withSuccessHandler(function (r) {
+        if (r) offGravar(chaveCache, r);
+        cb(r || (assoc ? [] : { inNatura: [], beneficiado: [], salgados: [] }), false, true);
+      })
+      .withFailureHandler(usarCache);
+    if (assoc) h.obterEstoqueAssociacao(); else h.obterEstoquePorMari(chave);
+  } else {
+    usarCache();
+  }
+}
+
+// Baixa os estoques em segundo plano para poder usá-los sem internet
+function offPrecarregarEstoques() {
+  if (!userSession || !navigator.onLine || offFila().length || offSincronizando) return;
+  if (userSession.tipo === "Administrativo") {
+    AppAPI.run.withSuccessHandler(function (d) {
+      if (!d || !d.porMari || offFila().length) return;
+      d.porMari.forEach(function (p) {
+        offGravar(OFF.EST + p.chaveAcesso, {
+          inNatura: p.inNatura || [], beneficiado: p.beneficiado || [], salgados: p.salgados || []
+        });
+      });
+    }).obterEstoqueAdminCompleto();
+    AppAPI.run.withSuccessHandler(function (l) {
+      if (l && !offFila().length) offGravar(OFF.EST + "ASSOCIACAO", l);
+    }).obterEstoqueAssociacao();
+  } else {
+    var chave = userSession.chaveAcesso;
+    AppAPI.run.withSuccessHandler(function (r) {
+      if (r && !offFila().length) offGravar(OFF.EST + chave, r);
+    }).obterEstoquePorMari(chave);
+  }
+}
+
+// ---------- interface: faixa de status + tela de pendências ----------
+function offAtualizarBanner() {
+  var b = document.getElementById("offBanner");
+  if (!b) return;
+  var n = offFila().length, on = navigator.onLine;
+  var txt = "", cls = "";
+  if (offSincronizando) { txt = "🔄 Enviando registros…"; cls = "sync"; }
+  else if (!on) {
+    txt = "📴 Sem internet — você pode continuar registrando." + (n ? " (" + n + " pendente" + (n > 1 ? "s" : "") + ")" : "");
+    cls = "off";
+  } else if (n) {
+    txt = "⏳ " + n + " registro" + (n > 1 ? "s" : "") + " aguardando envio — toque para ver";
+    cls = "pend";
+  }
+  b.className = cls;
+  b.textContent = txt;
+  b.style.display = txt ? "block" : "none";
+  var tela = document.getElementById("screenFila");
+  if (tela && tela.classList.contains("active")) offRenderFila();
+}
+
+function offAbrirFila() {
+  mudarJanela("screenFila", false);
+  offRenderFila();
+}
+
+function offVoltarDaFila() {
+  if (userSession) voltarMenu(); else mudarJanela("screenLogin", false);
+}
+
+function offRenderFila() {
+  var div = document.getElementById("offListaFila");
+  if (!div) return;
+  var fila = offFila();
+  if (!fila.length) { div.innerHTML = '<p class="badge-vazio">Nenhum registro pendente. ✅</p>'; return; }
+  div.innerHTML = fila.map(function (it) {
+    var d = new Date(it.criadoEm);
+    var quando = d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    var travado = (it.tentativas || 0) >= OFF.MAX_TENT;
+    return '<div class="meta-card">'
+      + '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">'
+      + '<span class="user-nome">' + escHtml(it.rotulo || it.fn) + '</span>'
+      + '<button class="btn-excluir" onclick="offConfirmarDescarte(\'' + escAttr(it.id) + '\')">🗑</button>'
+      + '</div>'
+      + '<div style="font-size:0.72rem; color:var(--tinta-2); margin-top:4px;">' + quando
+      + (it.usuario ? ' — ' + escHtml(it.usuario) : '') + '</div>'
+      + (travado
+        ? '<div class="off-item-erro">Não foi possível enviar após ' + OFF.MAX_TENT + ' tentativas'
+          + (it.ultimoErro ? ': ' + escHtml(it.ultimoErro) : '') + '. Toque em "Enviar agora" para tentar de novo.</div>'
+        : '')
+      + '</div>';
+  }).join("");
+}
+
+function offConfirmarDescarte(id) {
+  abrirModal("Descartar este registro? Ele NÃO será enviado para a planilha.", function () {
+    var fila = offFila().filter(function (it) { return it.id !== id; });
+    offGravar(OFF.FILA, fila);
+    offAtualizarBanner();
+    offRenderFila();
+    if (!fila.length) offPrecarregarEstoques();
+  });
+}
+
+function offEnviarAgora() {
+  var fila = offFila();
+  if (!fila.length) return alertBox("Nada pendente para enviar.", false);
+  if (!navigator.onLine) return alertBox("📴 Ainda sem internet.", true);
+  fila.forEach(function (it) { it.tentativas = 0; });
+  offGravar(OFF.FILA, fila);
+  offSincronizarComAviso();
+}
+
+// ---------- cadastros em cache ----------
+function offRenderTudo() {
+  gerarCartoesVisuais();
+  renderNoticias(cacheApp.noticias);
+  renderBanner(cacheApp.bannerUrl);
+  preencherSelectsRelatorio();
+  renderMetas(cacheApp.metas);
+  renderListaProdutos();
+  renderListaSalgados();
+  renderListaCompradores();
+  renderListaNoticias();
+}
+
+function offCadastroValido(o) {
+  return !!(o && ((o.produtos && o.produtos.length) || (o.todosUsuarios && o.todosUsuarios.length)));
+}
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+window.onload = async function() {
+  try {
+    await window.__offlineQueueReady;
+    try { history.replaceState({ screen: "screenLogin" }, "", ""); } catch (e) {}
+
+    var hoje = new Date().toISOString().slice(0, 10);
+    var ids = ["entDataRetro","procDataRetro","saiDataRetro","salgDataRetro"];
+    ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=hoje; });
+
+    var fs = localStorage.getItem("cg_fonte");
+    if (fs) definirFonte(parseInt(fs), true);
+
+    if (localStorage.getItem("cg_dark") === "1") {
+      document.body.classList.add("dark");
+      var b1 = document.getElementById("btnDark");     if(b1) b1.textContent = "☀️";
+      var b2 = document.getElementById("btnDarkPainel"); if(b2) b2.textContent = "☀️ Desativar";
+    }
+
+    var tl = localStorage.getItem("cg_tipoletra") || "caveat";
+    definirTipoLetra(tl, true);
+
+    // Offline: logo guardada da última vez; só consulta o servidor se houver internet
+    var logoSalva = offLer("cg_logo_v1", "");
+    if (logoSalva) { var imgL = document.getElementById("logoPrincipal"); if (imgL) imgL.src = logoSalva; }
+    if (navigator.onLine) {
+      AppAPI.run.withSuccessHandler(function(url) {
+        if (url && url.length > 10) {
+          var img = document.getElementById("logoPrincipal");
+          if (img) img.src = url;
+          offGravar("cg_logo_v1", url);
+        }
+      }).obterLogoInicial();
+    }
+
+    offAtualizarBanner();
+    if (navigator.onLine && offFila().length) offSincronizarComAviso();
+  } catch (e) {
+    console.error("Erro ao inicializar:", e);
+  }
+};
+
+window.addEventListener("online", function () {
+  offAtualizarBanner();
+  offSincronizarComAviso();
+});
+window.addEventListener("offline", offAtualizarBanner);
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && navigator.onLine && offFila().length) offSincronizarComAviso();
+});
+// Tenta reenviar a cada 30s se houver pendências e conexão
+setInterval(function () {
+  if (navigator.onLine && offFila().length && !offSincronizando) offSincronizarComAviso();
+}, 30000);
+
+// ============================================================
+// ACESSIBILIDADE
+// ============================================================
+function ajustarFonte(delta) {
+  var idx = FONTES.indexOf(fonteAtual);
+  idx = Math.max(0, Math.min(FONTES.length - 1, idx + delta));
+  definirFonte(FONTES[idx]);
+}
+
+function definirFonte(px, silencioso) {
+  fonteAtual = px;
+  document.documentElement.style.setProperty("--fs-base", px + "px");
+  var fsInd = document.getElementById("fsIndicador");
+  if (fsInd) fsInd.textContent = Math.round(px / 16 * 100) + "%";
+  localStorage.setItem("cg_fonte", px);
+  document.querySelectorAll(".fs-btn").forEach(function(b) {
+    b.classList.remove("ativo");
+    if (b.textContent.indexOf(px + "px") !== -1) b.classList.add("ativo");
+  });
+}
+
+function toggleDark() {
+  var isDark = document.body.classList.toggle("dark");
+  localStorage.setItem("cg_dark", isDark ? "1" : "0");
+  var icone = isDark ? "☀️" : "🌙";
+  var b1 = document.getElementById("btnDark");       if(b1) b1.textContent = icone;
+  var b2 = document.getElementById("btnDarkPainel"); if(b2) b2.textContent = isDark ? "☀️ Desativar" : "🌙 Ativar";
+}
+
+function definirTipoLetra(tipo, silencioso) {
+  document.body.classList.toggle("fonte-padrao", tipo === "padrao");
+  localStorage.setItem("cg_tipoletra", tipo);
+  var bC = document.getElementById("btnFonteCaveat");
+  var bP = document.getElementById("btnFontePadrao");
+  if (bC) bC.classList.toggle("ativo", tipo !== "padrao");
+  if (bP) bP.classList.toggle("ativo", tipo === "padrao");
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function abrirModal(texto, callback) {
+  var textEl = document.getElementById("modalTexto");
+  if (textEl) textEl.textContent = texto;
+  _excluirCallback = callback;
+  document.getElementById("modalOverlay").classList.add("ativo");
+  document.getElementById("btnConfirmarExclusao").onclick = function() {
+    var cb = _excluirCallback;
+    fecharModal();
+    if (typeof cb === "function") cb();
+  };
+}
+
+function fecharModal() {
+  document.getElementById("modalOverlay").classList.remove("ativo");
+  _excluirCallback = null;
+}
+
+// ============================================================
+// MENSAGENS
+// ============================================================
+function alertBox(text, isError) {
+  var b = document.getElementById("statusMsg");
+  if (!b) return;
+  b.innerText = text;
+  b.className = "msg " + (isError ? "msg-erro" : "msg-sucesso");
+  b.style.display = "block";
+  clearTimeout(b._timer);
+  b._timer = setTimeout(function() { b.style.display = "none"; }, 4500);
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+var _bloqueiaPushHistorico = false;
+var _TELAS_BASE = { screenMenu: 1, screenLogin: 1 };
+
+function mudarJanela(id, wide) {
+  document.querySelectorAll(".screen").forEach(function(s) { s.classList.remove("active"); });
+  document.getElementById("mainContainer").classList.toggle("wide", !!wide);
+  var screen = document.getElementById(id);
+  if (screen) screen.classList.add("active");
+  window.scrollTo(0, 0);
+
+  if (!_bloqueiaPushHistorico) {
+    try {
+      if (_TELAS_BASE[id]) {
+        // Menu/Login são a "base": não empilha, só marca o estado atual
+        history.replaceState({ screen: id }, "", "");
+      } else {
+        // Entrando numa tela: empilha, assim o botão voltar do celular sabe pra onde ir
+        history.pushState({ screen: id }, "", "");
+      }
+    } catch (e) {}
+  }
+}
+
+// Botão/gesto de voltar do celular (ou do navegador) → volta pro menu do app
+window.addEventListener("popstate", function() {
+  _bloqueiaPushHistorico = true;
+  if (userSession) voltarMenu(); else mudarJanela("screenLogin", false);
+  _bloqueiaPushHistorico = false;
+  // Reempilha um estado "buffer" pra continuar capturando o próximo voltar
+  try { history.pushState({ screen: "screenMenu" }, "", ""); } catch (e) {}
+});
+
+function voltarMenu() {
+  // Garante que a barra de acesso aparece se o usuário está logado
+  if (userSession) {
+    var barra = document.getElementById("barraAcesso");
+    if (barra) barra.style.display = "flex";
+  }
+  mudarJanela("screenMenu", false);
+}
+
+// ============================================================
+// LOGIN / LOGOUT — funciona sem internet se a chave já foi usada neste aparelho
+// ============================================================
+function offEntrarComoUsuario(res) {
+  userSession = res;
+  if (res && res.token) localStorage.setItem("cg_session_token_v1", res.token);
+  document.getElementById("lblNomeUsuario").innerText = res.nome || "Usuário";
+  document.getElementById("lblTipoUsuario").innerText = res.tipo || "Marisqueira";
+  document.getElementById("imgUserSession").src = res.foto || FOTO_PESSOA;
+
+  var isAdmin = (res.tipo === "Administrativo");
+  document.getElementById("menuAdminArea").style.display = isAdmin ? "block" : "none";
+
+  // Coleta, beneficiamento e processados: admin vê o seletor de pessoa
+  [["blocoMarisqueiraEnt", "entMarisqueiraVal"],
+   ["blocoMarisqueiraBenef", "procMarisqueiraVal"],
+   ["blocoMarisqueiraSalg", "salgMarisqueiraVal"]].forEach(function (par) {
+    var bloco = document.getElementById(par[0]);
+    if (bloco) bloco.style.display = isAdmin ? "block" : "none";
+    if (!isAdmin) {
+      var v = document.getElementById(par[1]);
+      if (v) v.value = res.chaveAcesso;
+    }
+  });
+
+  document.getElementById("barraAcesso").style.display = "flex";
+  inicializarSistema();
+}
+
+function login() {
+  var chaveAcesso = (document.getElementById("txtLoginChaveAcesso").value || "").trim();
+  if (!chaveAcesso) return alertBox("Preencha a chave de acesso.", true);
+  var chaveNum = chaveAcesso.replace(/[^\d]/g, "");
+  var btn = document.getElementById("btnLogin");
+
+  function liberarBotao() { if (btn) { btn.disabled = false; btn.textContent = "Entrar →"; } }
+
+  function tentarOffline() {
+    liberarBotao();
+    var logins = offLer(OFF.LOGINS, {});
+    if (logins[chaveNum]) {
+      alertBox("📴 Sem conexão: entrando com os dados salvos neste aparelho.", false);
+      offEntrarComoUsuario(logins[chaveNum]);
+    } else {
+      alertBox("Sem internet, e esta chave ainda não foi usada neste aparelho. Conecte-se no primeiro acesso.", true);
+    }
+  }
+
+  if (!navigator.onLine) return tentarOffline();
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Buscando…'; }
+
+  AppAPI.run
+    .withSuccessHandler(function (res) {
+      liberarBotao();
+      if (res && res.sucesso) {
+        var logins = offLer(OFF.LOGINS, {});
+        logins[chaveNum] = res;
+        offGravar(OFF.LOGINS, logins);
+        offEntrarComoUsuario(res);
+      } else {
+        alertBox(res ? res.mensagem : "Erro ao fazer login.", true);
+      }
+    })
+    .withFailureHandler(function () { tentarOffline(); })
+    .realizarLogin(chaveAcesso);
+}
+
+function logout() {
+  userSession = null;
+  localStorage.removeItem("cg_session_token_v1");
+  carrinhoEntradas = [];
+  cacheApp = {};
+  document.getElementById("barraAcesso").style.display = "none";
+  document.getElementById("txtLoginChaveAcesso").value = "";
+  mudarJanela("screenLogin", false);
+}
+
+// ============================================================
+// CARREGAR DADOS — chamado após login, navega pro menu
+// (usa o servidor se houver internet; senão, os dados salvos no aparelho)
+// ============================================================
+function inicializarSistema(callback) {
+  mudarJanela("screenCarregando", false);
+
+  function seguir(opcoes, doServidor) {
+    cacheApp = opcoes;
+    if (doServidor) offGravar(OFF.APP, opcoes);
+    try { offRenderTudo(); } catch (e) { console.error("Erro ao renderizar dados:", e); }
+    if (typeof callback === "function") callback(); else voltarMenu();
+    offSincronizarComAviso();
+    offPrecarregarEstoques();
+  }
+
+  function usarCache() {
+    var c = offLer(OFF.APP, null);
+    if (c) {
+      seguir(c, false);
+      alertBox("📴 Usando os dados salvos no último acesso.", false);
+    } else {
+      seguir(OFF_VAZIO, false);
+      alertBox("⚠️ Sem internet e sem dados salvos. Conecte-se ao menos uma vez.", true);
+    }
+  }
+
+  if (!navigator.onLine) return usarCache();
+
+  AppAPI.run
+    .withSuccessHandler(function (opcoes) {
+      if (offCadastroValido(opcoes)) seguir(opcoes, true);
+      else usarCache();
+    })
+    .withFailureHandler(function () { usarCache(); })
+    .buscarOpcoesFormularios();
+}
+
+// Atualiza dados sem trocar de tela
+function recarregarDados(callback) {
+  function fim() { if (typeof callback === "function") callback(); }
+  if (!navigator.onLine) return fim();
+
+  AppAPI.run
+    .withSuccessHandler(function (opcoes) {
+      if (offCadastroValido(opcoes)) {
+        cacheApp = opcoes;
+        offGravar(OFF.APP, opcoes);
+        try { offRenderTudo(); } catch (e) { console.error("Erro recarregar:", e); }
+      }
+      fim();
+    })
+    .withFailureHandler(fim)
+    .buscarOpcoesFormularios();
+}
+
+// ============================================================
+// RENDER — BANNER E NOTÍCIAS
+// ============================================================
+function renderBanner(url) {
+  var img = document.getElementById("imgBannerApp");
+  if (!img) return;
+  if (url && url.length > 10) { img.src = url; img.style.display = "block"; }
+  else { img.style.display = "none"; }
+}
+
+function renderNoticias(noticias) {
+  var div = document.getElementById("listaNoticiasDinamica");
+  if (!div) return;
+  if (!noticias || noticias.length === 0) {
+    div.innerHTML = '<span style="font-style:italic; color:var(--tinta-2);">Sem avisos recentes.</span>';
+    return;
+  }
+  div.innerHTML = noticias.map(function(n) {
+    var imgHtml = (n.fotoUrl && n.fotoUrl.length > 10)
+      ? '<img src="' + n.fotoUrl + '" class="noticia-img" onerror="this.style.display=\'none\'">'
+      : "";
+    return '<div class="noticia-item">'
+      + '<strong>' + escHtml(n.titulo || "Sem título") + '</strong>'
+      + '<div class="noticia-meta">' + (n.data || "") + ' — ' + escHtml(n.autor || "Sistema") + '</div>'
+      + '<span style="font-size:0.82rem; color:var(--tinta);">' + escHtml(n.mensagem || "") + '</span>'
+      + imgHtml + '</div>';
+  }).join("");
+}
+
+function renderListaNoticias() {
+  var div = document.getElementById("listaNoticiasCadastradas");
+  if (!div) return;
+  if (!cacheApp.noticias || cacheApp.noticias.length === 0) {
+    div.innerHTML = '<p style="font-size:0.82rem; color:var(--tinta-2); font-style:italic;">Sem avisos.</p>';
+    return;
+  }
+  var html = '<h3 style="margin-bottom:8px;">Avisos ativos:</h3>';
+  cacheApp.noticias.forEach(function(n) {
+    var idEsc = escAttr(String(n.id));
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed var(--vinho-claro);">'
+      + '<div style="flex:1;">'
+      + '<div style="font-family:var(--fonte-decorativa); font-weight:700; color:var(--vinho); font-size:0.95rem;">' + escHtml(n.titulo || "") + '</div>'
+      + '<div style="font-size:0.7rem; color:var(--tinta-2);">' + (n.data || "") + ' — ' + escHtml(n.autor || "") + '</div>'
+      + '</div>'
+      + '<button class="btn-excluir" onclick="confirmarExclusaoNoticia(\'' + idEsc + '\')">🗑</button>'
+      + '</div>';
+  });
+  div.innerHTML = html;
+}
+
+// ============================================================
+// CARTÕES VISUAIS
+// ============================================================
+function ordenarPorNome(lista) {
+  return (lista || []).slice().sort(function(a, b) {
+    return String(a.nome || "").localeCompare(String(b.nome || ""), 'pt-BR', { sensitivity: 'base' });
+  });
+}
+
+function criarHtmlCards(lista, inputId, grupoClass, filtrarSelf) {
+  if (!lista) return "";
+  return ordenarPorNome(lista).map(function(item) {
+    var val   = item.chaveAcesso || item.nome;
+    var img   = item.foto || FOTO_PRODUTO;
+    var label = (item.nome || "");
+    var unid  = item.unidade ? '<small>' + escHtml(item.unidade) + '</small>' : '';
+
+    if (filtrarSelf && userSession && userSession.tipo !== "Administrativo") {
+      if (!item.chaveAcesso || item.chaveAcesso !== userSession.chaveAcesso) return "";
+    }
+    var isSelf = filtrarSelf && userSession && item.chaveAcesso && item.chaveAcesso === userSession.chaveAcesso;
+    var sel = isSelf ? " selecionado" : "";
+    if (isSelf) {
+      var inputEl = document.getElementById(inputId);
+      if (inputEl) inputEl.value = val;
+    }
+    return '<div class="card-visual ' + grupoClass + sel + '" '
+      + 'onclick="selecionarCard(this,\'' + escAttr(inputId) + '\',\'' + escAttr(String(val)) + '\',\'' + grupoClass + '\')">'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+      + '<span>' + escHtml(label) + '</span>' + unid
+      + '</div>';
+  }).join("");
+}
+
+function criarHtmlCardsSalgados(lista, inputId, grupoClass) {
+  if (!lista || lista.length === 0) return '<p class="badge-vazio">Nenhum produto processado cadastrado. Peça ao admin para cadastrar.</p>';
+  return ordenarPorNome(lista).map(function(item) {
+    var img   = item.foto || FOTO_SALGADO;
+    var label = (item.nome || "");
+    var unid  = item.unidade ? '<small>' + escHtml(item.unidade) + '</small>' : '';
+    return '<div class="card-visual ' + grupoClass + '" '
+      + 'onclick="selecionarCard(this,\'' + escAttr(inputId) + '\',\'' + escAttr(item.nome) + '\',\'' + grupoClass + '\')">'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_SALGADO + '\'">'
+      + '<span>' + escHtml(label) + '</span>' + unid
+      + '</div>';
+  }).join("");
+}
+
+// Define a unidade da venda automaticamente (herdada do cadastro do produto)
+function setUnidadeVenda(u) {
+  var h = document.getElementById("saiUnidade");
+  var l = document.getElementById("saiUnidadeLabel");
+  if (h) h.value = u || "";
+  if (l) l.textContent = u || "—";
+}
+
+// Unidade de um produto processado (do cadastro): UN, DZ, KG, G, L, ML…
+function unidadeDoProcessado(nome) {
+  var s = (cacheApp.salgados || []).find(function(x) { return x.nome === nome; });
+  return (s && s.unidade) ? s.unidade : "UN";
+}
+
+// Alvos de produção: marisqueiras + o PRÓPRIO admin logado (admin também produz)
+function listaAlvosProducao() {
+  var lista = ordenarPorNome(cacheApp.marisqueiras);
+  if (userSession && userSession.tipo === "Administrativo") {
+    var jaTem = lista.some(function(m) { return m.chaveAcesso === userSession.chaveAcesso; });
+    if (!jaTem) {
+      lista.unshift({
+        chaveAcesso: userSession.chaveAcesso,
+        nome: userSession.nome || "Você",
+        tipo: "Administrativo",
+        foto: userSession.foto || ""
+      });
+    }
+  }
+  return lista;
+}
+
+function gerarCartoesVisuais() {
+  document.getElementById("gridMarisqueirasEnt").innerHTML  = criarHtmlCards(listaAlvosProducao(), "entMarisqueiraVal", "grp-m-ent", true);
+  document.getElementById("gridProdutosEnt").innerHTML      = criarHtmlCards(cacheApp.produtos,     "entProdutoVal",     "grp-p-ent", false);
+  document.getElementById("gridMarisqueirasProc").innerHTML = criarHtmlCards(listaAlvosProducao(), "procMarisqueiraVal","grp-m-proc", false);
+  document.getElementById("gridOrigemProc").innerHTML       = criarHtmlCards(cacheApp.produtos,     "procOrigemVal",     "grp-p-origem", false);
+  document.getElementById("gridFimProc").innerHTML          = criarHtmlCards(cacheApp.produtos,     "procProdFinalVal",  "grp-p-fim", false);
+  document.getElementById("gridMarisqueirasSalg").innerHTML = criarHtmlCards(listaAlvosProducao(), "salgMarisqueiraVal","grp-m-salg", false);
+  document.getElementById("gridSalgadosProd").innerHTML     = criarHtmlCardsSalgados(cacheApp.salgados, "salgTipoVal", "grp-s-prod");
+  document.getElementById("gridCompradoresSai").innerHTML   = criarHtmlCards(cacheApp.compradores,  "saiDestinoVal",     "grp-c-sai", false);
+  // gridProdutosSai e gridSalgadosSai são preenchidos por abrirTelaVenda() com estoque real, não com o catálogo completo
+}
+
+// ============================================================
+// VENDA — usa estoque real (só itens disponíveis)
+// ============================================================
+var estoqueDisponivelVenda = { beneficiado: [], salgados: [] };
+var vendedorAtual = ''; // chaveAcesso da pessoa, ou 'associacao'
+
+function abrirTelaVenda() {
+  mudarJanela("screenSaida", false);
+  var isAdmin = userSession && userSession.tipo === "Administrativo";
+
+  var divV = document.getElementById("divVendedorVenda");
+  if (divV) divV.style.display = isAdmin ? "" : "none";
+
+  if (isAdmin) {
+    // Monta a lista: todas as pessoas cadastradas + Associação AMQMI
+    var grid = document.getElementById("gridVendedorVenda");
+    var pessoas = listaAlvosProducao();
+    var opcoes = pessoas.map(function(p) {
+      return '<div class="card-visual grp-vend-sai" data-chave="' + escAttr(p.chaveAcesso) + '"'
+        + ' onclick="selecionarVendedorVenda(this,\'' + escAttr(p.chaveAcesso) + '\')">'
+        + '<img src="' + (p.foto || FOTO_PESSOA) + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+        + '<span>' + escHtml(String(p.nome).replace(" (você)", "")) + '</span>'
+        + '</div>';
+    }).join("");
+    opcoes += '<div class="card-visual grp-vend-sai" data-chave="associacao" onclick="selecionarVendedorVenda(this,\'associacao\')">'
+      + '<img src="' + FOTO_PESSOA + '"><span>🤝 Associação AMQMI</span></div>';
+    if (grid) grid.innerHTML = opcoes;
+    vendedorAtual = '';
+    document.getElementById("saiVendedorVal").value = '';
+  } else {
+    // Marisqueira: vende sempre do próprio estoque
+    vendedorAtual = (userSession && userSession.chaveAcesso) || '';
+  }
+
+  var ts = document.getElementById("tabVendaSalgado"); if (ts) ts.style.display = "";
+  var lbl = document.getElementById("lblEstoqueVendaInfo");
+  if (lbl) lbl.textContent = "Apenas produtos com estoque beneficiado disponível";
+
+  setUnidadeVenda("");
+  document.getElementById("gridProdutosSai").innerHTML = '<p class="badge-vazio">Selecione quem está vendendo.</p>';
+  document.getElementById("gridSalgadosSai").innerHTML = '';
+  if (!isAdmin) carregarEstoqueVenda();
+}
+
+function selecionarVendedorVenda(elem, chave) {
+  document.querySelectorAll(".grp-vend-sai").forEach(function(c) { c.classList.remove("selecionado"); });
+  elem.classList.add("selecionado");
+  document.getElementById("saiVendedorVal").value = chave;
+  vendedorAtual = chave;
+
+  var ts = document.getElementById("tabVendaSalgado");
+  var lbl = document.getElementById("lblEstoqueVendaInfo");
+  if (chave === 'associacao') {
+    if (ts) ts.style.display = ""; // Processado também pode estar no estoque da Associação
+    if (lbl) lbl.textContent = "Produtos no estoque da Associação";
+  } else {
+    if (ts) ts.style.display = "";
+    var nomeSel = String(elem.textContent || "").trim();
+    if (lbl) lbl.textContent = "Estoque beneficiado de " + nomeSel;
+  }
+  carregarEstoqueVenda();
+}
+
+// Estoque para venda: servidor se der, senão o guardado no aparelho
+function carregarEstoqueVenda() {
+  var gp = document.getElementById("gridProdutosSai");
+  var gs = document.getElementById("gridSalgadosSai");
+  gp.innerHTML = '<p class="badge-vazio">Carregando estoque…</p>';
+  gs.innerHTML = '<p class="badge-vazio">Carregando estoque…</p>';
+
+  if (!vendedorAtual) {
+    gp.innerHTML = '<p class="badge-vazio">Selecione quem está vendendo.</p>';
+    return;
+  }
+
+  var chave = (vendedorAtual === "associacao") ? "ASSOCIACAO" : vendedorAtual;
+
+  offEstoqueDe(chave, function (r, doAparelho, existia) {
+    if (chave === "ASSOCIACAO") {
+      // Separa por catálogo: o que está em Produtos vai pra "Beneficiado",
+      // o que está em Processados vai pra "Processado"
+      var nomesSalgados = {};
+      (cacheApp.salgados || []).forEach(function (s) { nomesSalgados[s.nome] = true; });
+      var benef = [], salg = [];
+      (r || []).forEach(function (item) {
+        if (nomesSalgados[item.nome]) salg.push(item); else benef.push(item);
+      });
+      estoqueDisponivelVenda.beneficiado = benef;
+      estoqueDisponivelVenda.salgados = salg;
+    } else {
+      estoqueDisponivelVenda.beneficiado = (r && r.beneficiado) ? r.beneficiado : [];
+      estoqueDisponivelVenda.salgados    = (r && r.salgados) ? r.salgados : [];
+    }
+    renderCardsVendaEstoque();
+    if (doAparelho) {
+      alertBox(existia
+        ? "💾 Usando o estoque guardado neste aparelho (já desconta o que foi vendido offline)."
+        : "⚠️ Estoque ainda não foi baixado neste aparelho. Conecte-se ao menos uma vez para vender offline.", !existia);
+    }
+  });
+}
+
+function renderCardsVendaEstoque() {
+  // Produtos beneficiados disponíveis
+  var beneficiado = estoqueDisponivelVenda.beneficiado || [];
+  if (beneficiado.length === 0) {
+    document.getElementById("gridProdutosSai").innerHTML = '<p class="badge-vazio">Sem estoque beneficiado disponível para venda.</p>';
+  } else {
+    document.getElementById("gridProdutosSai").innerHTML = beneficiado.map(function(item) {
+      var cad = (cacheApp.produtos || []).find(function(x) { return x.nome === item.nome; });
+      var img = (cad && cad.foto) ? cad.foto : FOTO_PRODUTO;
+      var label = (item.nome || "");
+      return '<div class="card-visual grp-p-sai" '
+        + 'onclick="selecionarCardVenda(this,\'saiProdutoVal\',\'' + escAttr(item.nome) + '\',\'grp-p-sai\',' + item.qtd + ')">'
+        + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+        + '<span>' + escHtml(label) + '</span>'
+        + '<span style="font-size:0.68rem; color:var(--verde); font-weight:700;">' + item.qtd + ' ' + ((cad && cad.unidade) || "KG") + '</span>'
+        + '</div>';
+    }).join("");
+  }
+
+  // Salgados disponíveis
+  var salgados = estoqueDisponivelVenda.salgados || [];
+  if (salgados.length === 0 || !salgados.some(function(s){ return parseFloat(s.qtd) > 0; })) {
+    document.getElementById("gridSalgadosSai").innerHTML = '<p class="badge-vazio">Sem estoque de processados disponível.</p>';
+  } else {
+    document.getElementById("gridSalgadosSai").innerHTML = salgados.filter(function(s){ return parseFloat(s.qtd) > 0; }).map(function(item) {
+      var cad = (cacheApp.salgados || []).find(function(x) { return x.nome === item.nome; });
+      var img = (cad && cad.foto) ? cad.foto : FOTO_SALGADO;
+      var label = (item.nome || "");
+      return '<div class="card-visual grp-s-sai" '
+        + 'onclick="selecionarCardVenda(this,\'saiSalgadoVal\',\'' + escAttr(item.nome) + '\',\'grp-s-sai\',' + item.qtd + ')">'
+        + '<img src="' + img + '" onerror="this.src=\'' + FOTO_SALGADO + '\'">'
+        + '<span>' + escHtml(label) + '</span>'
+        + '<span style="font-size:0.68rem; color:var(--salgado); font-weight:700;">' + item.qtd + ' ' + ((cad && cad.unidade) || "UN") + '</span>'
+        + '</div>';
+    }).join("");
+  }
+}
+
+// Seleciona card de venda e guarda o limite de estoque disponível
+var limiteEstoqueSelecionado = 0;
+function selecionarCardVenda(elem, id, val, grupo, disponivel) {
+  selecionarCard(elem, id, val, grupo);
+  limiteEstoqueSelecionado = parseFloat(disponivel) || 0;
+  var qtdInput = document.getElementById("saiQtd");
+  if (qtdInput) qtdInput.max = limiteEstoqueSelecionado;
+  var cad = (id === "saiSalgadoVal")
+    ? (cacheApp.salgados || []).find(function(x) { return x.nome === val; })
+    : (cacheApp.produtos || []).find(function(x) { return x.nome === val; });
+  var unidTxt = (cad && cad.unidade) ? cad.unidade : (id === "saiSalgadoVal" ? "UN" : "KG");
+  alertBox("Disponível: " + limiteEstoqueSelecionado + " " + unidTxt, false);
+}
+
+function selecionarCard(elem, id, val, grupo) {
+  document.querySelectorAll("." + grupo).forEach(function(c) { c.classList.remove("selecionado"); });
+  elem.classList.add("selecionado");
+  var inputEl = document.getElementById(id);
+  if (inputEl) inputEl.value = val;
+
+  // Auto-preencher valor ao selecionar produto na venda
+  if (id === "saiProdutoVal") {
+    var p = (cacheApp.produtos || []).find(function(x) { return x.nome === val; });
+    if (p) {
+      if (p.valor > 0) document.getElementById("saiValorUnit").value = p.valor;
+      setUnidadeVenda((p && p.unidade) || "KG");
+      calcVenda();
+    }
+  }
+  if (id === "salgTipoVal") {
+    var sp = (cacheApp.salgados || []).find(function(x) { return x.nome === val; });
+    var lblU = document.getElementById("salgUnidLabel");
+    if (lblU) lblU.textContent = (sp && sp.unidade) ? sp.unidade : "UN";
+  }
+  if (id === "saiSalgadoVal") {
+    var s = (cacheApp.salgados || []).find(function(x) { return x.nome === val; });
+    setUnidadeVenda((s && s.unidade) || "UN");
+    if (s && s.valor > 0) {
+      document.getElementById("saiValorUnit").value = s.valor;
+      calcVenda();
+    }
+  }
+  if (id === "saiDestinoVal") {
+    var esporadicoDiv = document.getElementById("divNomeEsporadico");
+    if (esporadicoDiv) esporadicoDiv.style.display = (val === "Comprador Esporádico") ? "block" : "none";
+  }
+}
+
+// ============================================================
+// TIPO DE VENDA (Pescado / Salgado)
+// ============================================================
+function alternarTipoVenda(tipo) {
+  tipoVendaAtual = tipo;
+  var isPescado = (tipo === 'pescado');
+  document.getElementById("divProdutosVenda").style.display  = isPescado ? "block" : "none";
+  document.getElementById("divSalgadosVenda").style.display  = isPescado ? "none"  : "block";
+  document.getElementById("tabVendaPescado").classList.toggle("ativo", isPescado);
+  document.getElementById("tabVendaSalgado").classList.toggle("ativo", !isPescado);
+  // Limpa seleções ao trocar (os cards do estoque já estão renderizados, não precisam recarregar)
+  document.getElementById("saiProdutoVal").value  = "";
+  document.getElementById("saiSalgadoVal").value  = "";
+  document.querySelectorAll(".grp-p-sai, .grp-s-sai").forEach(function(c){ c.classList.remove("selecionado"); });
+  document.getElementById("saiValorUnit").value = "";
+  document.getElementById("saiQtd").value = "";
+  limiteEstoqueSelecionado = 0;
+  document.getElementById("resumoVenda").classList.remove("visivel");
+  // Unidade padrão
+  document.getElementById("saiUnidade").value = isPescado ? "KG" : "UN";
+}
+
+// ============================================================
+// LISTAS DE ADMINISTRAÇÃO
+// ============================================================
+function renderListaProdutos() {
+  var div = document.getElementById("listaProdutosCadastrados");
+  if (!div) return;
+  if (!cacheApp.produtos || cacheApp.produtos.length === 0) {
+    div.innerHTML = '<p style="font-size:0.82rem; color:var(--tinta-2); font-style:italic;">Nenhum produto.</p>';
+    return;
+  }
+  var html = '<h3 style="margin-bottom:8px;">Produtos:</h3><div class="grid-visual">';
+  ordenarPorNome(cacheApp.produtos).forEach(function(prod) {
+    var img     = prod.foto || FOTO_PRODUTO;
+    var nomeEsc = escAttr(prod.nome || "");
+    html += '<div class="card-visual" style="position:relative;">'
+      + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'produto\',\'' + nomeEsc + '\')">×</button>'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+      + '<span>' + escHtml((prod.nome || "")) + '</span>'
+      + (prod.unidade ? '<small>' + escHtml(prod.unidade) + '</small>' : '')
+      + '</div>';
+  });
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+function renderListaSalgados() {
+  var div = document.getElementById("listaSalgadosCadastrados");
+  if (!div) return;
+  if (!cacheApp.salgados || cacheApp.salgados.length === 0) {
+    div.innerHTML = '<p style="font-size:0.82rem; color:var(--tinta-2); font-style:italic;">Nenhum produto processado cadastrado.</p>';
+    return;
+  }
+  var html = '<h3 style="margin-bottom:8px;">Produtos processados cadastrados:</h3><div class="grid-visual">';
+  ordenarPorNome(cacheApp.salgados).forEach(function(s) {
+    var img     = s.foto || FOTO_SALGADO;
+    var nomeEsc = escAttr(s.nome || "");
+    html += '<div class="card-visual" style="position:relative;">'
+      + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'salgado\',\'' + nomeEsc + '\')">×</button>'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_SALGADO + '\'">'
+      + '<span>' + escHtml((s.nome || "")) + '</span>'
+      + (s.unidade ? '<small>' + escHtml(s.unidade) + '</small>' : '')
+      + '</div>';
+  });
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+function renderListaCompradores() {
+  var div = document.getElementById("listaCompradoresCadastrados");
+  if (!div) return;
+  var lista = (cacheApp.compradores || []).filter(function(c) {
+    return c.nome !== "Comprador Esporádico" && c.nome !== "Associação AMQMI";
+  });
+  if (lista.length === 0) {
+    div.innerHTML = '<p style="font-size:0.82rem; color:var(--tinta-2); font-style:italic;">Nenhum comprador.</p>';
+    return;
+  }
+  var html = '<h3 style="margin-bottom:8px;">Compradores:</h3><div class="grid-visual">';
+  ordenarPorNome(lista).forEach(function(comp) {
+    var img     = comp.foto || FOTO_PESSOA;
+    var nomeEsc = escAttr(comp.nome || "");
+    html += '<div class="card-visual" style="position:relative;">'
+      + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'comprador\',\'' + nomeEsc + '\')">×</button>'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+      + '<span>' + escHtml((comp.nome || "")) + '</span>'
+      + '</div>';
+  });
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+// ============================================================
+// EXCLUSÕES (precisam de internet)
+// ============================================================
+function confirmarExclusaoItem(tipo, nome) {
+  if (!offExigeInternet()) return;
+  var labels = { produto: "produto", comprador: "comprador", salgado: "salgado" };
+  abrirModal('Excluir ' + (labels[tipo] || tipo) + ' "' + nome + '"?', function() {
+    executarExclusaoItem(tipo, nome);
+  });
+}
+
+function executarExclusaoItem(tipo, nome) {
+  AppAPI.run
+    .withSuccessHandler(function(msg) { alertBox(msg, false); recarregarDados(); })
+    .withFailureHandler(function(err) { alertBox("Erro ao excluir: " + (err ? err.message : "desconhecido"), true); })
+    .excluirItemPorNome(tipo, nome);
+}
+
+function confirmarExclusaoNoticia(noticiaId) {
+  if (!offExigeInternet()) return;
+  abrirModal('Excluir aviso?', function() {
+    AppAPI.run
+      .withSuccessHandler(function(msg) { alertBox(msg, false); recarregarDados(); })
+      .withFailureHandler(function(err) { alertBox("Erro ao excluir: " + (err ? err.message : "desconhecido"), true); })
+      .excluirNoticia(String(noticiaId));
+  });
+}
+
+function confirmarExclusaoUsuario() {
+  if (!offExigeInternet()) return;
+  var chaveAcesso = document.getElementById("cadUsrChaveAcessoOriginal").value;
+  if (!chaveAcesso) return alertBox("Nenhum usuário selecionado.", true);
+  abrirModal('Excluir usuário?', function() {
+    AppAPI.run
+      .withSuccessHandler(function(msg) {
+        alertBox(msg, false);
+        ocultarFormularioUsuario();
+        recarregarDados();
+      })
+      .withFailureHandler(function(err) { alertBox("Erro ao excluir: " + (err ? err.message : "desconhecido"), true); })
+      .excluirUsuarioPorChaveAcesso(chaveAcesso);
+  });
+}
+
+// ============================================================
+// LOTE
+// ============================================================
+function gerarLotePersonalizado(nomeBase, dataRefStr) {
+  var partes = String(nomeBase || "").trim().toUpperCase().split(" ");
+  var sigla  = partes[0] ? partes[0].charAt(0) : "X";
+  sigla += (partes.length > 1) ? partes[partes.length - 1].charAt(0) : (partes[0] && partes[0].length > 1 ? partes[0].charAt(1) : "X");
+  var d = dataRefStr ? new Date(dataRefStr + "T12:00:00") : new Date();
+  return sigla + "-" + String(d.getDate()).padStart(2, "0") + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+// ============================================================
+// ENTRADA — CARRINHO
+// ============================================================
+function adicionarItemCarrinho() {
+  var mariCpf  = document.getElementById("entMarisqueiraVal").value;
+  var prodNome = document.getElementById("entProdutoVal").value;
+  var qtd      = parseFloat(document.getElementById("entQtd").value || 0);
+  var unidade  = document.getElementById("entUnidade").value;
+
+  if (!mariCpf)               return alertBox("Selecione a produtora.", true);
+  if (!prodNome)              return alertBox("Selecione o produto.", true);
+  if (isNaN(qtd) || qtd <= 0) return alertBox("Quantidade inválida.", true);
+
+  var mari = listaAlvosProducao().find(function(m) { return m.chaveAcesso === mariCpf; });
+  if (!mari) mari = { nome: (userSession && userSession.nome) || "Sistema", chaveAcesso: mariCpf };
+  mari = { nome: String(mari.nome).replace(" (você)", ""), chaveAcesso: mari.chaveAcesso };
+
+  carrinhoEntradas.push({
+    dataRetro:         document.getElementById("entDataRetro").value,
+    marisqueiraNome:   mari.nome,
+    marisqueiraChave:  mari.chaveAcesso,
+    nomeProduto:       prodNome,
+    quantidade:        qtd,
+    unidade:           unidade,
+    operadorNome:      (userSession && userSession.nome) || "Sistema",
+    lotePersonalizado: gerarLotePersonalizado(mari.nome, document.getElementById("entDataRetro").value)
+  });
+
+  document.getElementById("entQtd").value = "";
+  document.getElementById("listaCarrinho").innerHTML = carrinhoEntradas.map(function(i, idx) {
+    return '<div class="carrinho-item">🦀 ' + i.quantidade.toFixed(2) + ' ' + i.unidade
+      + ' — ' + escHtml(i.nomeProduto)
+      + ' <span style="font-size:0.72rem; color:var(--tinta-2);">(' + i.lotePersonalizado + ')</span>'
+      + ' <button onclick="removerItemCarrinho(' + idx + ')" style="width:auto;padding:2px 7px;margin:0;font-size:0.75rem;border-color:#c0392b;color:#c0392b;box-shadow:none;">✕</button>'
+      + '</div>';
+  }).join("");
+  document.getElementById("areaCarrinho").style.display = "block";
+  alertBox("Item adicionado! ✔", false);
+}
+
+function removerItemCarrinho(idx) {
+  carrinhoEntradas.splice(idx, 1);
+  if (carrinhoEntradas.length === 0) {
+    document.getElementById("areaCarrinho").style.display = "none";
+    document.getElementById("listaCarrinho").innerHTML = "";
+  } else {
+    // Atualiza a lista
+    document.getElementById("listaCarrinho").innerHTML = carrinhoEntradas.map(function(i, index) {
+      return '<div class="carrinho-item">🦀 ' + i.quantidade.toFixed(2) + ' ' + i.unidade
+        + ' — ' + escHtml(i.nomeProduto)
+        + ' <span style="font-size:0.72rem; color:var(--tinta-2);">(' + i.lotePersonalizado + ')</span>'
+        + ' <button onclick="removerItemCarrinho(' + index + ')" style="width:auto;padding:2px 7px;margin:0;font-size:0.75rem;border-color:#c0392b;color:#c0392b;box-shadow:none;">✕</button>'
+        + '</div>';
+    }).join("");
+  }
+}
+
+// Coleta: guarda no aparelho e envia (agora ou quando a internet voltar)
+function salvarEntradaForm() {
+  // Tenta adicionar item atual se houver quantidade preenchida
+  var qtdInput = document.getElementById("entQtd");
+  if (qtdInput && qtdInput.value && parseFloat(qtdInput.value) > 0) adicionarItemCarrinho();
+  if (carrinhoEntradas.length === 0) return alertBox("Lista vazia!", true);
+
+  var copia = JSON.parse(JSON.stringify(carrinhoEntradas));
+  setBtnCarregando("btnConfirmarEntrada", true);
+
+  registrarOperacao(
+    "salvarMultiplasEntradas",
+    copia,
+    "Coleta: " + copia.length + " item(ns)",
+    function () {
+      copia.forEach(function (it) {
+        ajustarEstoqueLocal(it.marisqueiraChave, "inNatura", it.nomeProduto, parseFloat(it.quantidade) || 0);
+      });
+    },
+    function (enviado, falhou) {
+      setBtnCarregando("btnConfirmarEntrada", false);
+      if (falhou) return;
+      carrinhoEntradas = [];
+      document.getElementById("areaCarrinho").style.display = "none";
+      document.getElementById("listaCarrinho").innerHTML = "";
+      document.getElementById("entQtd").value = "";
+      // Limpar seleções
+      document.querySelectorAll(".grp-p-ent, .grp-m-ent").forEach(function(c){ c.classList.remove("selecionado"); });
+      document.getElementById("entProdutoVal").value = "";
+      document.getElementById("entMarisqueiraVal").value =
+        (userSession && userSession.tipo !== "Administrativo") ? userSession.chaveAcesso : "";
+      recarregarDados(voltarMenu);
+    }
+  );
+}
+
+// ============================================================
+// BENEFICIAMENTO
+// ============================================================
+function salvarProducaoForm() {
+  var pOrigem = document.getElementById("procOrigemVal").value;
+  var pFim    = document.getElementById("procProdFinalVal").value;
+  var pBruto  = document.getElementById("procBruto").value;
+  var pLimpo  = document.getElementById("procLimpo").value;
+  if (!pOrigem || !pFim || !pBruto || !pLimpo) return alertBox("Preencha todos os campos.", true);
+
+  var isAdmin  = userSession && userSession.tipo === "Administrativo";
+  var cpfAlvo, nomeAlvo;
+
+  if (isAdmin) {
+    cpfAlvo = document.getElementById("procMarisqueiraVal").value;
+    if (!cpfAlvo) return alertBox("Selecione para qual marisqueira.", true);
+    var mariSel = listaAlvosProducao().find(function(m) { return m.chaveAcesso === cpfAlvo; });
+    nomeAlvo = mariSel ? String(mariSel.nome).replace(" (você)", "") : (userSession.nome || "Sistema");
+  } else {
+    cpfAlvo  = (userSession && userSession.chaveAcesso)  || "";
+    nomeAlvo = (userSession && userSession.nome) || "Sistema";
+  }
+
+  var payload = {
+    dataRetro:       document.getElementById("procDataRetro").value,
+    mariscoOrigem:   pOrigem,
+    pesoInNatura:    pBruto,
+    pesoBeneficiado: pLimpo,
+    perdas:          document.getElementById("procPerdas").value,
+    produtoFinal:    pFim,
+    qtdGerada:       pLimpo,
+    lote:            gerarLotePersonalizado(nomeAlvo, document.getElementById("procDataRetro").value),
+    operador:        (userSession && userSession.nome) || "Sistema",
+    cpfOperador:     cpfAlvo
+  };
+
+  registrarOperacao(
+    "salvarProducaoRendimento",
+    payload,
+    "Beneficiamento: " + pFim + " (" + (parseFloat(pLimpo) || 0).toFixed(2) + " KG)",
+    function () {
+      ajustarEstoqueLocal(cpfAlvo, "inNatura", pOrigem, -(parseFloat(pBruto) || 0));
+      ajustarEstoqueLocal(cpfAlvo, "beneficiado", pFim, parseFloat(pLimpo) || 0);
+    },
+    function () {
+      document.getElementById("procBruto").value  = "";
+      document.getElementById("procLimpo").value  = "";
+      document.getElementById("procPerdas").value = "";
+      document.querySelectorAll(".grp-m-proc, .grp-p-origem, .grp-p-fim").forEach(function(c){ c.classList.remove("selecionado"); });
+      document.getElementById("procOrigemVal").value    = "";
+      document.getElementById("procProdFinalVal").value = "";
+      if (isAdmin) document.getElementById("procMarisqueiraVal").value = "";
+      recarregarDados(voltarMenu);
+    }
+  );
+}
+
+// ============================================================
+// SALGADOS — PRODUÇÃO
+// ============================================================
+function salvarSalgadoForm() {
+  var salgNome = document.getElementById("salgTipoVal").value;
+  var qtd      = parseFloat(document.getElementById("salgQtd").value || 0);
+  var obs      = document.getElementById("salgObs").value || "";
+
+  if (!salgNome)              return alertBox("Selecione o tipo de produto processado.", true);
+  if (isNaN(qtd) || qtd <= 0) return alertBox("Informe a quantidade produzida.", true);
+
+  var isAdmin  = userSession && userSession.tipo === "Administrativo";
+  var cpfAlvo, nomeAlvo;
+
+  if (isAdmin) {
+    cpfAlvo = document.getElementById("salgMarisqueiraVal").value;
+    if (!cpfAlvo) return alertBox("Selecione para qual operadora.", true);
+    var mariSel = listaAlvosProducao().find(function(m) { return m.chaveAcesso === cpfAlvo; });
+    nomeAlvo = mariSel ? String(mariSel.nome).replace(" (você)", "") : (userSession.nome || "Sistema");
+  } else {
+    cpfAlvo  = (userSession && userSession.chaveAcesso)  || "";
+    nomeAlvo = (userSession && userSession.nome) || "Sistema";
+  }
+
+  var payload = {
+    dataRetro:   document.getElementById("salgDataRetro").value,
+    unidade:     unidadeDoProcessado(salgNome),
+    salgado:     salgNome,
+    quantidade:  qtd,
+    observacao:  obs,
+    lote:        gerarLotePersonalizado(nomeAlvo, document.getElementById("salgDataRetro").value),
+    operador:    (userSession && userSession.nome) || "Sistema",
+    cpfOperador: cpfAlvo
+  };
+
+  registrarOperacao(
+    "salvarProducaoSalgado",
+    payload,
+    "Processado: " + salgNome + " (" + qtd + " " + payload.unidade + ")",
+    function () { ajustarEstoqueLocal(cpfAlvo, "salgados", salgNome, qtd); },
+    function () {
+      document.getElementById("salgQtd").value = "";
+      document.getElementById("salgObs").value = "";
+      document.querySelectorAll(".grp-s-prod, .grp-m-salg").forEach(function(c){ c.classList.remove("selecionado"); });
+      document.getElementById("salgTipoVal").value = "";
+      if (isAdmin) document.getElementById("salgMarisqueiraVal").value = "";
+      recarregarDados(voltarMenu);
+    }
+  );
+}
+
+// ============================================================
+// VENDA / SAÍDA
+// ============================================================
+function salvarSaidaForm() {
+  var dest = document.getElementById("saiDestinoVal").value;
+  if (!dest) return alertBox("Selecione o destino.", true);
+  if (dest === "Comprador Esporádico") {
+    var nomeEsp = (document.getElementById("saiNomeEsporadico").value || "").trim();
+    dest = "Esporádico: " + (nomeEsp || "Não identificado");
+  }
+
+  var qtd = parseFloat(document.getElementById("saiQtd").value || 0);
+  if (isNaN(qtd) || qtd <= 0) return alertBox("Quantidade inválida.", true);
+
+  var isPescado = (tipoVendaAtual === 'pescado');
+  var nomeProduto, unidade;
+
+  if (isPescado) {
+    nomeProduto = document.getElementById("saiProdutoVal").value;
+    unidade     = document.getElementById("saiUnidade").value || "KG";
+    if (!nomeProduto) return alertBox("Selecione o produto beneficiado.", true);
+  } else {
+    nomeProduto = document.getElementById("saiSalgadoVal").value;
+    unidade     = document.getElementById("saiUnidade").value || "UN";
+    if (!nomeProduto) return alertBox("Selecione o produto processado.", true);
+  }
+
+  // Valida contra o limite de estoque carregado na seleção do card
+  if (limiteEstoqueSelecionado > 0 && qtd > limiteEstoqueSelecionado) {
+    return alertBox("Quantidade maior que o estoque disponível (" + limiteEstoqueSelecionado + " " + unidade + ").", true);
+  }
+
+  if (!vendedorAtual) return alertBox("Selecione quem está vendendo.", true);
+
+  var vU = parseFloat(document.getElementById("saiValorUnit").value || 0) || 0;
+  var vendedor = vendedorAtual;
+  var payload = {
+    dataRetro:    document.getElementById("saiDataRetro").value,
+    nomeProduto:  nomeProduto,
+    qtdVenda:     qtd,
+    unidade:      unidade,
+    valorUnidade: document.getElementById("saiValorUnit").value,
+    valorVenda:   (qtd * vU).toFixed(2),
+    tipoSaida:    dest,
+    tipoItem:     tipoVendaAtual,
+    vendedor:     vendedor,
+    lote:         gerarLotePersonalizado((userSession && userSession.nome) || "Sistema", document.getElementById("saiDataRetro").value),
+    operadorNome: (userSession && userSession.nome) || "Sistema",
+    chaveAcessoOperador: (userSession && userSession.chaveAcesso) || ""
+  };
+
+  registrarOperacao(
+    "salvarSaida",
+    payload,
+    "Venda: " + qtd + " " + unidade + " de " + nomeProduto + " (R$ " + (qtd * vU).toFixed(2) + ")",
+    function () {
+      if (vendedor === "associacao") {
+        ajustarEstoqueAssocLocal(nomeProduto, -qtd);
+      } else {
+        ajustarEstoqueLocal(vendedor, isPescado ? "beneficiado" : "salgados", nomeProduto, -qtd);
+        if (dest === "Associação AMQMI") ajustarEstoqueAssocLocal(nomeProduto, qtd);
+      }
+    },
+    function () {
+      document.getElementById("saiQtd").value        = "";
+      document.getElementById("saiValorUnit").value  = "";
+      document.getElementById("saiNomeEsporadico").value = "";
+      document.getElementById("resumoVenda").classList.remove("visivel");
+      document.querySelectorAll(".grp-p-sai, .grp-s-sai, .grp-c-sai").forEach(function(c){ c.classList.remove("selecionado"); });
+      document.getElementById("saiProdutoVal").value  = "";
+      document.getElementById("saiSalgadoVal").value  = "";
+      document.getElementById("saiDestinoVal").value  = "";
+      document.getElementById("divNomeEsporadico").style.display = "none";
+      limiteEstoqueSelecionado = 0;
+      setUnidadeVenda("");
+      recarregarDados(voltarMenu);
+    }
+  );
+}
+
+// ============================================================
+// CÁLCULOS INLINE
+// ============================================================
+function calcPerdas() {
+  var b = parseFloat(document.getElementById("procBruto").value || 0);
+  var l = parseFloat(document.getElementById("procLimpo").value || 0);
+  document.getElementById("procPerdas").value = Math.max(0, b - l).toFixed(2);
+}
+
+function calcVenda() {
+  var q     = parseFloat(document.getElementById("saiQtd").value || 0);
+  var v     = parseFloat(document.getElementById("saiValorUnit").value || 0);
+  var unid  = document.getElementById("saiUnidade").value || (tipoVendaAtual === 'pescado' ? "KG" : "UN");
+
+  // Avisa se ultrapassar o estoque disponível, mas não bloqueia digitação
+  if (limiteEstoqueSelecionado > 0 && q > limiteEstoqueSelecionado) {
+    alertBox("⚠️ Atenção: quantidade acima do estoque disponível (" + limiteEstoqueSelecionado + " " + unid + ")", true);
+  }
+
+  var total = (q * v).toFixed(2);
+  if (q > 0) {
+    document.getElementById("rv_qtd").textContent   = q.toFixed(2) + " " + unid;
+    document.getElementById("rv_unit").textContent  = "R$ " + v.toFixed(2) + "/" + unid;
+    document.getElementById("rv_total").textContent = "R$ " + total;
+    document.getElementById("resumoVenda").classList.add("visivel");
+  } else {
+    document.getElementById("resumoVenda").classList.remove("visivel");
+  }
+}
+
+// ============================================================
+// ESTOQUE PRÓPRIO
+// ============================================================
+function abrirMeuEstoque() {
+  // Abre a tela de estoque (editável quando online e sem pendências)
+  abrirMeuEstoqueManual();
+}
+
+// ============================================================
+// ESTOQUE ADMIN (Associação + Por Marisqueira)
+// ============================================================
+function abrirEstoqueAdmin() {
+  mudarJanela("screenEstoqueAdmin", false);
+
+  // Offline (ou com registros pendentes): mostra o que está guardado no aparelho
+  if (!navigator.onLine || offFila().length || offSincronizando) {
+    renderEstoqueAssociacao(offLer(OFF.EST + "ASSOCIACAO", []));
+    renderEstoqueAdminPorMari((cacheApp.todosUsuarios || []).map(function (u) {
+      var e = offLer(OFF.EST + u.chaveAcesso, null) || {};
+      return {
+        chaveAcesso: u.chaveAcesso, nome: u.nome, tipo: u.tipo, foto: u.foto,
+        inNatura: e.inNatura || [], beneficiado: e.beneficiado || [], salgados: e.salgados || []
+      };
+    }));
+    alertBox("💾 Mostrando o estoque guardado neste aparelho (inclui registros ainda não enviados).", false);
+    return;
+  }
+
+  document.getElementById("conteudoEstoqueAssoc").innerHTML = '<p class="badge-vazio">Carregando…</p>';
+  document.getElementById("conteudoEstoquePorMari").innerHTML = '<p class="badge-vazio">Carregando…</p>';
+
+  // Carrega estoque da Associação
+  AppAPI.run
+    .withSuccessHandler(function(estoque) {
+      estoque = estoque || [];
+      offGravar(OFF.EST + "ASSOCIACAO", estoque);
+      renderEstoqueAssociacao(estoque);
+    })
+    .withFailureHandler(function() {
+      document.getElementById("conteudoEstoqueAssoc").innerHTML = '<p style="color:red;">Erro ao carregar estoque</p>';
+    })
+    .obterEstoqueAssociacao();
+
+  // Carrega estoque por marisqueira
+  AppAPI.run
+    .withSuccessHandler(function(dados) {
+      if (!dados || !dados.porMari) dados = { porMari: [] };
+      dados.porMari.forEach(function (p) {
+        offGravar(OFF.EST + p.chaveAcesso, {
+          inNatura: p.inNatura || [], beneficiado: p.beneficiado || [], salgados: p.salgados || []
+        });
+      });
+      renderEstoqueAdminPorMari(dados.porMari);
+    })
+    .withFailureHandler(function() {
+      document.getElementById("conteudoEstoquePorMari").innerHTML = '<p style="color:red;">Erro ao carregar estoque</p>';
+    })
+    .obterEstoqueAdminCompleto();
+}
+
+function renderEstoqueAssociacao(lista) {
+  var div = document.getElementById("conteudoEstoqueAssoc");
+  if (!div) return;
+  if (!lista || lista.length === 0) {
+    div.innerHTML = '<p class="badge-vazio">Sem estoque na Associação.</p>';
+    return;
+  }
+  div.innerHTML = '<div class="grid-visual">' + lista.map(function(i) {
+    var cad = (cacheApp.produtos || []).find(function(x) { return x.nome === i.nome; });
+    var img = (cad && cad.foto) ? cad.foto : FOTO_PRODUTO;
+    return '<div class="estoque-card">'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+      + '<div class="est-nome">' + escHtml(i.nome || "") + '</div>'
+      + '<div class="est-qtd" style="color:var(--verde);">' + (i.qtd || "0") + '</div>'
+      + '<div style="font-size:0.68rem; color:var(--tinta-2);">KG</div>'
+      + '</div>';
+  }).join("") + '</div>';
+}
+
+function renderEstoqueAdminPorMari(lista) {
+  var div = document.getElementById("conteudoEstoquePorMari");
+  if (!div) return;
+  if (!lista || lista.length === 0) { div.innerHTML = '<p class="badge-vazio">Nenhuma pessoa.</p>'; return; }
+
+  div.innerHTML = lista.map(function(pessoa) {
+    var img    = pessoa.foto || FOTO_PESSOA;
+    // 3 categorias: inNatura, beneficiado, salgados
+    var temInNatura = pessoa.inNatura && pessoa.inNatura.length > 0;
+    var temBenef = pessoa.beneficiado && pessoa.beneficiado.length > 0;
+    var temSalgado = pessoa.salgados && pessoa.salgados.length > 0;
+    var temProdutos = temInNatura || temBenef || temSalgado;
+    var chip   = temProdutos
+      ? '<span class="chip chip-verde">Com estoque</span>'
+      : '<span class="chip chip-vinho">Sem estoque</span>';
+    var bodyId = "mariCorpo_" + (pessoa.chaveAcesso || "").replace(/[^\w]/g, "");
+
+    function renderProdutos(listaItems, cor, tipo, unid) {
+      if (!listaItems || listaItems.length === 0) return '<p class="badge-vazio" style="padding:6px 0; font-size:0.8rem;">—</p>';
+      return '<div class="grid-visual">' + listaItems.map(function(i) {
+        var fonte = (tipo === 'Salgado') ? (cacheApp.salgados || []) : (cacheApp.produtos || []);
+        var prod = fonte.find(function(x) { return x.nome === i.nome; });
+        var imgP = (prod && prod.foto) ? prod.foto : FOTO_PRODUTO;
+        return '<div class="estoque-card">'
+          + '<img src="' + imgP + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+          + '<div class="est-nome">' + escHtml(i.nome || "") + '</div>'
+          + '<div class="est-qtd" style="color:' + cor + ';">' + (i.qtd || "0") + '</div>'
+          + '<div style="font-size:0.68rem; color:var(--tinta-2);">' + (tipo === 'Salgado' ? unidadeDoProcessado(i.nome) : unid) + '</div>'
+          + '</div>';
+      }).join("") + '</div>';
+    }
+
+    return '<div class="estoque-mari-card">'
+      + '<div class="estoque-mari-header" onclick="toggleMariCorpo(\'' + bodyId + '\')">'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+      + '<div style="flex:1;">'
+      + '<div class="estoque-mari-nome">' + escHtml(pessoa.nome || "") + '</div>'
+      + '<div class="estoque-mari-tipo">' + escHtml(pessoa.tipo || "") + '</div>'
+      + '</div>' + chip
+      + '<span style="font-size:1.2rem; margin-left:8px; color:var(--vinho);">▾</span>'
+      + '</div>'
+      + '<div class="estoque-mari-corpo" id="' + bodyId + '">'
+      + (!temProdutos
+        ? '<p class="badge-vazio" style="padding:10px 0;">Sem estoque registrado.</p>'
+        : (temInNatura ? '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin-bottom:6px;">🌊 In Natura</div>'
+            + renderProdutos(pessoa.inNatura, "var(--azul, #2a6f97)", "In Natura", "KG") : '')
+          + (temBenef ? '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin:8px 0 6px;">🦀 Beneficiado</div>'
+            + renderProdutos(pessoa.beneficiado, "var(--vinho)", "Beneficiado", "KG") : '')
+          + (temSalgado ? '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin:8px 0 6px;">🥟 Processados</div>'
+            + renderProdutos(pessoa.salgados, "var(--salgado)", "Salgado", "UN") : ''))
+      + '</div></div>';
+  }).join("");
+}
+
+// ============================================================
+// ADMIN — adicionar/editar estoque de qualquer marisqueira (só online e sem pendências)
+// ============================================================
+function salvarEstoqueDe(chave, nomeMari, tipo, produto, qtd) {
+  if (!offExigeSincronizado()) return;
+  if (!produto) { alertBox("Nome do produto vazio.", true); return; }
+  AppAPI.run
+    .withSuccessHandler(function(msg) {
+      alertBox(msg, false);
+      abrirEstoqueAdmin();
+      mostrarTabEstoque('marisqueiras');
+    })
+    .withFailureHandler(function(err) {
+      alertBox("Erro: " + (err && err.message ? err.message : err), true);
+    })
+    .salvarEstoqueManual({
+      chaveAcesso: chave,
+      nomeMari: nomeMari,
+      tipo: tipo || "Beneficiado",
+      produto: produto,
+      quantidade: qtd,
+      operador: (userSession && userSession.nome) || "Sistema"
+    });
+}
+
+function toggleMariCorpo(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle("aberto");
+}
+
+function mostrarTabEstoque(aba) {
+  var abas = { associacao: "tabAssocConteudo", marisqueiras: "tabMariConteudo" };
+  var btns = { associacao: "tabAssocBtn", marisqueiras: "tabMariBtn" };
+  Object.keys(abas).forEach(function(k) {
+    document.getElementById(abas[k]).style.display = (k === aba) ? "block" : "none";
+    document.getElementById(btns[k]).classList.toggle("ativo", k === aba);
+  });
+}
+
+// ============================================================
+// ESTOQUE MANUAL — ver/editar o próprio estoque
+// ============================================================
+function abrirMeuEstoqueManual() {
+  if (!userSession) { voltarMenu(); return; }
+  mudarJanela("screenMeuEstoqueManual", false);
+  document.getElementById("listaMeuEstoque").innerHTML = '<p class="badge-vazio">Carregando…</p>';
+
+  offEstoqueDe(userSession.chaveAcesso, function (est, doAparelho) {
+    renderMeuEstoqueManual(est);
+    if (doAparelho) alertBox("💾 Mostrando o estoque guardado neste aparelho (inclui registros ainda não enviados).", false);
+  });
+}
+
+function renderMeuEstoqueManual(lista) {
+  var div = document.getElementById("listaMeuEstoque");
+  if (!div) return;
+
+  var inNatura = (lista && lista.inNatura) || [];
+  var beneficiado = (lista && lista.beneficiado) || [];
+  var salgados = (lista && lista.salgados) || [];
+
+  if (inNatura.length === 0 && beneficiado.length === 0 && salgados.length === 0) {
+    div.innerHTML = '<p class="badge-vazio">Sem produtos no estoque.</p>';
+    return;
+  }
+
+  var contador = 0;
+  function renderCards(produtos, tipo, unidadePadrao) {
+    return '<div class="grid-visual">' + produtos.map(function(p) {
+      var img = p.foto || FOTO_PRODUTO;
+      var idCard = "estCard_" + (contador++);
+      var unid = (tipo === 'Salgado') ? unidadeDoProcessado(p.nome) : unidadePadrao;
+      return '<div class="estoque-card" id="' + idCard + '"'
+        + ' data-nome="' + escAttr(p.nome || "") + '" data-tipo="' + tipo + '" data-qtd="' + escAttr(String(p.qtd || "0")) + '" data-unid="' + escAttr(unid) + '"'
+        + ' onclick="abrirEdicaoCardEstoque(\'' + idCard + '\')">'
+        + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
+        + '<div class="est-nome">' + escHtml(p.nome || "") + '</div>'
+        + '<div class="est-qtd">' + (p.qtd || "0") + ' ' + unid + '</div>'
+        + '<div style="font-size:0.65rem; color:var(--vinho); margin-top:4px;">Toque para editar</div>'
+        + '</div>';
+    }).join("") + '</div>';
+  }
+
+  var html = '';
+  if (inNatura.length > 0) {
+    html += '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin-bottom:6px;">🌊 In Natura (bruto)</div>'
+      + renderCards(inNatura, 'In Natura', 'KG');
+  }
+  if (beneficiado.length > 0) {
+    html += '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin:10px 0 6px;">🦀 Beneficiado (vendível)</div>'
+      + renderCards(beneficiado, 'Beneficiado', 'KG');
+  }
+  if (salgados.length > 0) {
+    html += '<div style="font-size:0.75rem; font-weight:600; color:var(--tinta-2); text-transform:uppercase; margin:10px 0 6px;">🥟 Processados</div>'
+      + renderCards(salgados, 'Salgado', 'UN');
+  }
+  div.innerHTML = html;
+}
+
+// ============================================================
+// EDIÇÃO INLINE DO CARD DE ESTOQUE — sem pop-up, tudo dentro do card
+// (só com internet e sem registros pendentes)
+// ============================================================
+function abrirEdicaoCardEstoque(idCard) {
+  if (!offExigeSincronizado()) return;
+  var card = document.getElementById(idCard);
+  if (!card) return;
+  var nome  = card.getAttribute("data-nome");
+  var qtd   = card.getAttribute("data-qtd");
+  var unid  = card.getAttribute("data-unid");
+
+  card.setAttribute("onclick", "");
+  card.innerHTML = '<div class="est-nome" style="margin-bottom:6px;">' + escHtml(nome) + '</div>'
+    + '<input type="number" step="0.01" min="0" id="' + idCard + '_input" value="' + escAttr(qtd) + '"'
+    + ' style="width:100%; text-align:center; font-family:var(--fonte-decorativa); font-size:1.15rem; margin-bottom:6px;">'
+    + '<div style="font-size:0.62rem; color:var(--tinta-2); margin-bottom:6px;">' + escHtml(unid) + '</div>'
+    + '<div style="display:flex; gap:4px; justify-content:center;">'
+    + '<button class="btn-success" style="padding:3px 8px; font-size:0.72rem;" onclick="event.stopPropagation(); salvarEdicaoCardEstoque(\'' + idCard + '\')">✓ Salvar</button>'
+    + '<button class="btn-secondary" style="padding:3px 8px; font-size:0.72rem;" onclick="event.stopPropagation(); pedirApagarCardEstoque(\'' + idCard + '\')">🗑</button>'
+    + '<button class="btn-secondary" style="padding:3px 8px; font-size:0.72rem;" onclick="event.stopPropagation(); fecharEdicaoCardEstoque(\'' + idCard + '\')">✗</button>'
+    + '</div>';
+}
+
+function fecharEdicaoCardEstoque(idCard) {
+  recarregarDados(function() { abrirMeuEstoqueManual(); });
+}
+
+function pedirApagarCardEstoque(idCard) {
+  var card = document.getElementById(idCard);
+  if (!card) return;
+  var nome = card.getAttribute("data-nome");
+  card.innerHTML = '<div class="est-nome" style="margin-bottom:6px;">Apagar<br>' + escHtml(nome) + '?</div>'
+    + '<div style="display:flex; gap:4px; justify-content:center;">'
+    + '<button class="btn-success" style="padding:3px 8px; font-size:0.72rem;" onclick="event.stopPropagation(); confirmarApagarCardEstoque(\'' + idCard + '\')">✓ Sim</button>'
+    + '<button class="btn-secondary" style="padding:3px 8px; font-size:0.72rem;" onclick="event.stopPropagation(); abrirEdicaoCardEstoque(\'' + idCard + '\')">✗ Não</button>'
+    + '</div>';
+}
+
+function confirmarApagarCardEstoque(idCard) {
+  if (!userSession) return;
+  if (!offExigeSincronizado()) return;
+  var card = document.getElementById(idCard);
+  if (!card) return;
+  var nome = card.getAttribute("data-nome");
+  var tipo = card.getAttribute("data-tipo");
+  card.innerHTML = '<div style="font-size:0.75rem; color:var(--tinta-2); padding:16px 0;">Apagando…</div>';
+
+  AppAPI.run
+    .withSuccessHandler(function(msg) {
+      alertBox(msg, false);
+      recarregarDados(function() { abrirMeuEstoqueManual(); });
+    })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .excluirProdutoEstoqueManual({
+      chaveAcesso: userSession.chaveAcesso,
+      tipo: tipo || "Beneficiado",
+      produto: nome
+    });
+}
+
+function salvarEdicaoCardEstoque(idCard) {
+  if (!userSession) return;
+  if (!offExigeSincronizado()) return;
+  var card = document.getElementById(idCard);
+  if (!card) return;
+  var nome = card.getAttribute("data-nome");
+  var tipo = card.getAttribute("data-tipo");
+  var input = document.getElementById(idCard + "_input");
+  var novaQtd = Math.max(0, parseFloat(input ? input.value : 0) || 0);
+  card.innerHTML = '<div style="font-size:0.75rem; color:var(--tinta-2); padding:16px 0;">Salvando…</div>';
+
+  AppAPI.run
+    .withSuccessHandler(function(msg) {
+      alertBox(msg, false);
+      recarregarDados(function() { abrirMeuEstoqueManual(); });
+    })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .salvarEstoqueManual({
+      chaveAcesso: userSession.chaveAcesso,
+      nomeMari: userSession.nome,
+      tipo: tipo || "Beneficiado",
+      produto: nome,
+      quantidade: novaQtd,
+      operador: userSession.nome
+    });
+}
+
+// ============================================================
+// METAS (cadastro e progresso precisam de internet)
+// ============================================================
+function renderMetas(metas) {
+  var div = document.getElementById("listaMetasDinamica");
+  if (!div) return;
+  if (!metas || metas.length === 0) { div.innerHTML = '<p class="badge-vazio">Nenhuma meta.</p>'; return; }
+
+  var isAdmin = userSession && userSession.tipo === "Administrativo";
+  div.innerHTML = metas.map(function(m) {
+    var pct   = m.objetivo > 0 ? Math.min(100, Math.round(m.realizado / m.objetivo * 100)) : 0;
+    var idEsc = escAttr(String(m.id || ""));
+    return '<div class="meta-card">'
+      + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+      + '<span class="user-nome">' + escHtml(m.nome || "") + '</span>'
+      + '<span class="chip chip-vinho">' + pct + '%</span>'
+      + '</div>'
+      + '<div style="font-size:0.82rem; color:var(--tinta-2); margin-top:4px;">'
+      + (m.realizado || 0) + ' / ' + (m.objetivo || 0) + ' ' + escHtml(m.unidade || '')
+      + '</div>'
+      + '<div class="meta-progresso-bar"><div class="meta-progresso-fill" style="width:' + pct + '%"></div></div>'
+      + (isAdmin
+        ? '<div style="display:flex; gap:8px; margin-top:10px; align-items:center;">'
+          + '<input type="number" step="0.01" id="progMeta_' + m.id + '" placeholder="+ qtd" style="flex:1; font-size:0.9rem;" min="0">'
+          + '<button class="btn-success" style="flex:0; width:auto; padding:6px 12px; margin:0; font-size:0.85rem;" onclick="registrarProgressoMeta(\'' + idEsc + '\')">✔</button>'
+          + '<button class="btn-danger"  style="flex:0; width:auto; padding:6px 10px; margin:0; font-size:0.85rem;" onclick="confirmarExclusaoMeta(\'' + idEsc + '\')">🗑</button>'
+          + '</div>'
+        : '')
+      + '</div>';
+  }).join("");
+}
+
+function salvarMetaForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    nome:     (document.getElementById("cadMetaNome").value || "").trim(),
+    objetivo: document.getElementById("cadMetaObjetivo").value,
+    unidade:  document.getElementById("cadMetaUnidade").value
+  };
+  if (!p.nome || !p.objetivo) return alertBox("Preencha os campos.", true);
+  AppAPI.run
+    .withSuccessHandler(function(msg) {
+      alertBox(msg, false);
+      document.getElementById("cadMetaNome").value     = "";
+      document.getElementById("cadMetaObjetivo").value = "";
+      recarregarDados(voltarMenu);
+    })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .salvarNovaMeta(p);
+}
+
+function registrarProgressoMeta(idMeta) {
+  if (!offExigeInternet()) return;
+  var input = document.getElementById("progMeta_" + idMeta);
+  var valor = parseFloat(input ? input.value : 0);
+  if (isNaN(valor) || valor <= 0) return alertBox("Valor inválido.", true);
+  AppAPI.run
+    .withSuccessHandler(function(msg) { alertBox(msg, false); recarregarDados(); })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .adicionarProgressoMeta(idMeta, valor);
+}
+
+function confirmarExclusaoMeta(idMeta) {
+  if (!offExigeInternet()) return;
+  abrirModal('Excluir meta?', function() {
+    AppAPI.run
+      .withSuccessHandler(function(msg) { alertBox(msg, false); recarregarDados(); })
+      .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+      .excluirMeta(idMeta);
+  });
+}
+
+// ============================================================
+// EQUIPE / USUÁRIOS (gravar precisa de internet)
+// ============================================================
+function abrirCadastroUsuario() {
+  mudarJanela("screenCadUsuario", false);
+  renderEquipe();
+}
+
+function renderEquipe() {
+  if (!cacheApp.todosUsuarios) return;
+  var html = cacheApp.todosUsuarios.map(function(u) {
+    var img    = u.foto || FOTO_PESSOA;
+    var cpfEsc = escAttr(u.chaveAcesso || "");
+    return '<div class="card-equipe" onclick="exibirFormularioNovoUsuario(\'' + cpfEsc + '\')">'
+      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+      + '<div class="card-equipe-nome">' + escHtml((u.nome || "")) + '</div>'
+      + '<div class="card-equipe-info">Chave de Acesso: ' + escHtml(u.chaveAcesso || "") + '</div>'
+      + '</div>';
+  }).join("");
+  html += '<div class="card-equipe card-equipe-add" onclick="exibirFormularioNovoUsuario(\'\')">'
+    + '<div style="font-size:2.2rem; color:var(--vinho);">+</div>'
+    + '<div class="card-equipe-nome">Nova</div>'
+    + '</div>';
+  document.getElementById("gridEquipeCompleta").innerHTML = html;
+  document.getElementById("gridEquipeCompleta").style.display = "flex";
+}
+
+function exibirFormularioNovoUsuario(chaveAcesso) {
+  document.getElementById("blocoFormularioUsuario").style.display = "block";
+  document.getElementById("gridEquipeCompleta").style.display     = "none";
+  document.getElementById("tempUsrFoto").value                    = "";
+  document.getElementById("previewUsrFoto").style.display         = "none";
+  document.getElementById("cadUsrChaveAcesso").disabled                  = (chaveAcesso !== "");
+  document.getElementById("btnExcluirUsuario").style.display      = (chaveAcesso !== "") ? "block" : "none";
+  document.getElementById("cadUsrChaveAcessoOriginal").value              = chaveAcesso;
+
+  if (chaveAcesso !== "") {
+    var u = (cacheApp.todosUsuarios || []).find(function(x) { return x.chaveAcesso === chaveAcesso; });
+    if (u) {
+      document.getElementById("cadUsrChaveAcesso").value  = u.chaveAcesso  || "";
+      document.getElementById("cadUsrNome").value = u.nome || "";
+      document.getElementById("cadUsrTel").value  = u.telefone || "";
+      document.getElementById("cadUsrTipo").value = u.tipo || "Marisqueira";
+      if (u.foto) {
+        document.getElementById("previewUsrFoto").src           = u.foto;
+        document.getElementById("previewUsrFoto").style.display = "block";
+      }
+    }
+  } else {
+    document.getElementById("cadUsrChaveAcesso").value  = "";
+    document.getElementById("cadUsrNome").value = "";
+    document.getElementById("cadUsrTel").value  = "";
+    document.getElementById("cadUsrTipo").value = "Marisqueira";
+  }
+}
+
+function ocultarFormularioUsuario() {
+  document.getElementById("blocoFormularioUsuario").style.display = "none";
+  document.getElementById("gridEquipeCompleta").style.display     = "flex";
+}
+
+function salvarUsuarioForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    chaveAcesso:      (document.getElementById("cadUsrChaveAcesso").value  || "").trim(),
+    nome:     (document.getElementById("cadUsrNome").value || "").trim(),
+    telefone: (document.getElementById("cadUsrTel").value  || "").trim(),
+    tipo:     document.getElementById("cadUsrTipo").value  || "Marisqueira",
+    fotoUrl:  document.getElementById("tempUsrFoto").value
+  };
+  if (!p.chaveAcesso || !p.nome) return alertBox("Chave de Acesso e Nome são obrigatórios.", true);
+
+  function finalizar(url) {
+    p.fotoUrl = url;
+    AppAPI.run
+      .withSuccessHandler(function(m) {
+        alertBox(m, false);
+        ocultarFormularioUsuario();
+        recarregarDados(function(){ renderEquipe(); });
+      })
+      .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+      .salvarUsuario(p);
+  }
+
+  if (p.fotoUrl && p.fotoUrl.length > 500) {
+    AppAPI.run.withSuccessHandler(finalizar).uploadFotoParaDrive(p.fotoUrl, "USR_" + p.chaveAcesso + ".jpg");
+  } else {
+    finalizar(p.fotoUrl || "");
+  }
+}
+
+// ============================================================
+// LOGO / BANNER
+// ============================================================
+function salvarLogoForm() {
+  if (!offExigeInternet()) return;
+  var base64 = document.getElementById("tempLogoFoto").value;
+  if (!base64 || base64.length < 100) return alertBox("Escolha uma imagem.", true);
+  alertBox("Enviando…", false);
+  AppAPI.run
+    .withSuccessHandler(function(url) {
+      if (!url) return alertBox("Erro no upload.", true);
+      AppAPI.run
+        .withSuccessHandler(function(m) {
+          alertBox(m, false);
+          var img = document.getElementById("logoPrincipal");
+          if (img) img.src = url;
+          offGravar("cg_logo_v1", url);
+          voltarMenu();
+        })
+        .salvarLogo(url);
+    })
+    .uploadFotoParaDrive(base64, "LOGO_" + new Date().getTime() + ".jpg");
+}
+
+// ============================================================
+// AVISOS / NOTÍCIAS
+// ============================================================
+function salvarNoticiaForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    titulo:   (document.getElementById("cadNotiTitulo").value || "").trim(),
+    mensagem: (document.getElementById("cadNotiMsg").value    || "").trim(),
+    autor:    (userSession && userSession.nome) || "Sistema",
+    fotoUrl:  document.getElementById("tempNotiFoto").value,
+    validade: document.getElementById("cadNotiValidade").value
+  };
+  if (!p.titulo) return alertBox("Preencha o título.", true);
+  var isBanner = document.getElementById("cadNotiIsBanner").checked;
+  if (isBanner && (!p.fotoUrl || p.fotoUrl.length < 100)) return alertBox("Anexe uma imagem para o banner.", true);
+
+  function gravar(fotoUrl) {
+    p.fotoUrl = fotoUrl;
+    if (isBanner && fotoUrl) AppAPI.run.salvarConfiguracaoBanner(fotoUrl);
+    AppAPI.run
+      .withSuccessHandler(function(m) {
+        alertBox(m, false);
+        document.getElementById("cadNotiTitulo").value        = "";
+        document.getElementById("cadNotiMsg").value           = "";
+        document.getElementById("cadNotiValidade").value      = "";
+        document.getElementById("previewNotiFoto").style.display = "none";
+        document.getElementById("cadNotiIsBanner").checked    = false;
+        recarregarDados(voltarMenu);
+      })
+      .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+      .salvarNoticia(p);
+  }
+  if (p.fotoUrl && p.fotoUrl.length > 500) {
+    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "AVISO.jpg");
+  } else {
+    gravar("");
+  }
+}
+
+// ============================================================
+// PRODUTO
+// ============================================================
+function salvarProdutoForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    nomeProduto:  (document.getElementById("cadProdNome").value || "").trim(),
+    tipoProduto:  document.getElementById("cadProdTipo").value  || "Marisco",
+    unidade:      document.getElementById("cadProdUnid").value  || "KG",
+    valor:        document.getElementById("cadProdValor").value || "0",
+    fotoUrl:      document.getElementById("tempProdFoto").value,
+    operadorNome: (userSession && userSession.nome) || "Sistema"
+  };
+  if (!p.nomeProduto) return alertBox("Informe o nome.", true);
+  function gravar(url) {
+    p.fotoUrl = url;
+    AppAPI.run
+      .withSuccessHandler(function(m) {
+        alertBox(m, false);
+        document.getElementById("cadProdNome").value             = "";
+        document.getElementById("cadProdValor").value            = "";
+        document.getElementById("previewProdFoto").style.display = "none";
+        recarregarDados(voltarMenu);
+      })
+      .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+      .salvarProduto(p);
+  }
+  if (p.fotoUrl && p.fotoUrl.length > 500) {
+    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "PROD.jpg");
+  } else {
+    gravar("");
+  }
+}
+
+// ============================================================
+// SALGADO — CADASTRO (admin)
+// ============================================================
+function salvarSalgadoCadForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    nome:         (document.getElementById("cadSalgNome").value || "").trim(),
+    descricao:    (document.getElementById("cadSalgDesc").value || "").trim(),
+    unidade:      document.getElementById("cadSalgUnid").value  || "UN",
+    valor:        document.getElementById("cadSalgValor").value || "0",
+    fotoUrl:      document.getElementById("tempSalgFoto").value,
+    operadorNome: (userSession && userSession.nome) || "Sistema"
+  };
+  if (!p.nome) return alertBox("Informe o nome do produto processado.", true);
+  function gravar(url) {
+    p.fotoUrl = url;
+    AppAPI.run
+      .withSuccessHandler(function(m) {
+        alertBox(m, false);
+        document.getElementById("cadSalgNome").value             = "";
+        document.getElementById("cadSalgDesc").value             = "";
+        document.getElementById("cadSalgValor").value            = "";
+        document.getElementById("previewSalgFoto").style.display = "none";
+        recarregarDados(voltarMenu);
+      })
+      .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+      .salvarSalgado(p);
+  }
+  if (p.fotoUrl && p.fotoUrl.length > 500) {
+    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "SALG.jpg");
+  } else {
+    gravar("");
+  }
+}
+
+// ============================================================
+// COMPRADOR
+// ============================================================
+function salvarCompradorForm() {
+  if (!offExigeInternet()) return;
+  var p = {
+    nome:         (document.getElementById("cadCompNome").value || "").trim(),
+    documento:    (document.getElementById("cadCompDoc").value  || "").trim(),
+    telefone:     (document.getElementById("cadCompTel").value  || "").trim(),
+    endereco:     "",
+    fotoUrl:      "",
+    operadorNome: (userSession && userSession.nome) || "Sistema"
+  };
+  if (!p.nome) return alertBox("Informe o nome.", true);
+  AppAPI.run
+    .withSuccessHandler(function(m) {
+      alertBox(m, false);
+      document.getElementById("cadCompNome").value = "";
+      document.getElementById("cadCompDoc").value  = "";
+      document.getElementById("cadCompTel").value  = "";
+      recarregarDados(voltarMenu);
+    })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .salvarComprador(p);
+}
+
+// ============================================================
+// RELATÓRIOS (precisam de internet)
+// ============================================================
+function preencherSelectsRelatorio() {
+  var selM = document.getElementById("relCpfMari");
+  var selC = document.getElementById("relCompradorFiltro");
+  if (!selM || !selC) return;
+  selM.innerHTML = '<option value="">Todas</option>';
+  selC.innerHTML = '<option value="">Todos</option><option value="__ESPORADICO__">🕐 Comprador Esporádico</option>';
+  (cacheApp.marisqueiras || []).forEach(function(m) {
+    selM.innerHTML += '<option value="' + escAttr(m.chaveAcesso || "") + '">' + escHtml(m.nome || "Sem nome") + '</option>';
+  });
+  (cacheApp.compradores || []).forEach(function(c) {
+    selC.innerHTML += '<option value="' + escAttr(c.nome || "") + '">' + escHtml(c.nome || "Sem nome") + '</option>';
+  });
+  if (userSession && userSession.tipo !== "Administrativo") {
+    selM.value    = userSession.chaveAcesso || "";
+    selM.disabled = true;
+  }
+}
+
+function verificarFiltroRelatorio() {
+  var t = document.getElementById("relTipo").value;
+  document.getElementById("divFiltroMari").style.display      = (t !== "saida") ? "block" : "none";
+  document.getElementById("divFiltroComprador").style.display = (t === "saida") ? "block" : "none";
+}
+
+function verificarFiltroCompradorEsporadico() {
+  var v = document.getElementById("relCompradorFiltro").value;
+  document.getElementById("divRelNomeEsporadico").style.display = (v === "__ESPORADICO__") ? "block" : "none";
+}
+
+function puxarRelatorio() {
+  if (!offExigeInternet()) return;
+  var compSel = document.getElementById("relCompradorFiltro").value;
+  var isEsporadico = (compSel === "__ESPORADICO__");
+  var filtros = {
+    tipo:           document.getElementById("relTipo").value,
+    dataIni:        document.getElementById("relDataIni").value,
+    dataFim:        document.getElementById("relDataFim").value,
+    marisqueiraChave: document.getElementById("relCpfMari").value,
+    compradorNome:  isEsporadico ? "" : compSel,
+    compradorEsporadico: isEsporadico,
+    nomeEsporadico: isEsporadico ? (document.getElementById("relNomeEsporadico").value || "").trim() : "",
+    vendedor:       (userSession && userSession.tipo !== "Administrativo") ? (userSession.nome || "") : ""
+  };
+  var isAdmin = userSession && userSession.tipo === "Administrativo";
+  document.getElementById("tblHeader").innerHTML  = "<th>Buscando…</th>";
+  document.getElementById("tblBody").innerHTML    = "";
+  document.getElementById("btnGerarPdf").style.display = "none";
+  AppAPI.run
+    .withSuccessHandler(function(res) {
+      if (!res) { alertBox("Erro ao processar relatório.", true); return; }
+      var h = document.getElementById("tblHeader");
+      var b = document.getElementById("tblBody");
+      h.innerHTML = "";
+      _relColunasBase = (res.cabecalho || []).length;
+      (res.cabecalho || []).forEach(function(c) { h.innerHTML += "<th>" + escHtml(c || "") + "</th>"; });
+      if (isAdmin) h.innerHTML += "<th></th>";
+      if (!res.valores || res.valores.length === 0) {
+        b.innerHTML = '<tr><td colspan="' + ((res.cabecalho ? res.cabecalho.length : 1) + (isAdmin?1:0)) + '" style="font-style:italic;">Nenhum dado encontrado.</td></tr>';
+      } else {
+        var metas = res.metas || [];
+        b.innerHTML = (res.valores || []).map(function(l, idx) {
+          var meta = metas[idx];
+          var jaInvalido = (l[l.length-1] || "").indexOf("🚫") === 0;
+          var linhaHtml = "<tr" + (jaInvalido ? ' style="opacity:0.55;"' : '') + ">" + (l || []).map(function(c) { return "<td>" + escHtml(String(c || "")) + "</td>"; }).join("");
+          if (isAdmin) {
+            if (meta && !jaInvalido) {
+              linhaHtml += '<td id="cellInv_' + idx + '"><button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="pedirConfirmacaoInvalidar(' + idx + ',\'' + meta.sheet + '\',' + meta.linha + ')">🚫 Invalidar</button></td>';
+            } else {
+              linhaHtml += "<td></td>";
+            }
+          }
+          return linhaHtml + "</tr>";
+        }).join("");
+        document.getElementById("btnGerarPdf").style.display = "block";
+      }
+    })
+    .withFailureHandler(function() {
+      document.getElementById("tblHeader").innerHTML = "<th>Erro ao buscar.</th>";
+    })
+    .gerarRelatorio(filtros);
+}
+
+function pedirConfirmacaoInvalidar(idx, sheet, linha) {
+  var cel = document.getElementById("cellInv_" + idx);
+  if (!cel) return;
+  var linhaEsc = escAttr(String(linha || ""));
+  cel.innerHTML = '<div style="display:flex; gap:4px; align-items:center;">'
+    + '<span style="font-size:0.72rem; color:var(--vinho);">Invalidar?</span>'
+    + '<button class="btn-success" style="padding:3px 8px; font-size:0.75rem;" onclick="invalidarRegistroUI(\'' + sheet + '\',\'' + linhaEsc + '\',' + idx + ')">✓</button>'
+    + '<button class="btn-secondary" style="padding:3px 8px; font-size:0.75rem;" onclick="cancelarConfirmacaoInvalidar(' + idx + ',\'' + sheet + '\',\'' + linhaEsc + '\')">✗</button>'
+    + '</div>';
+}
+
+function cancelarConfirmacaoInvalidar(idx, sheet, linha) {
+  var cel = document.getElementById("cellInv_" + idx);
+  if (!cel) return;
+  var linhaEsc = escAttr(String(linha || ""));
+  cel.innerHTML = '<button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="pedirConfirmacaoInvalidar(' + idx + ',\'' + sheet + '\',\'' + linhaEsc + '\')">🚫 Invalidar</button>';
+}
+
+function invalidarRegistroUI(sheet, linha, idx) {
+  if (!userSession || userSession.tipo !== "Administrativo") return;
+  if (!offExigeInternet()) return;
+  var cel = document.getElementById("cellInv_" + idx);
+  if (cel) cel.innerHTML = '<span style="font-size:0.72rem; color:var(--tinta-2);">Invalidando…</span>';
+
+  AppAPI.run
+    .withSuccessHandler(function(msg) {
+      alertBox(msg, false);
+      puxarRelatorio();
+    })
+    .withFailureHandler(function(err) { alertBox("Erro: " + (err ? err.message : "desconhecido"), true); })
+    .invalidarRegistro({ sheet: sheet, linha: linha, motivo: "", operador: (userSession && userSession.nome) || "Admin" });
+}
+
+var _relColunasBase = 0;
+
+function gerarPdfRelatorio() {
+  if (typeof html2pdf === "undefined") return alertBox("📴 O gerador de PDF precisa de internet.", true);
+  var original = document.getElementById("tblRelatorio");
+  if (!original) return;
+
+  // 1) Clona a tabela e remove a coluna de ações (🚫 Invalidar), que não faz sentido no PDF
+  var clone = original.cloneNode(true);
+  if (_relColunasBase > 0) {
+    clone.querySelectorAll("tr").forEach(function(tr) {
+      while (tr.children.length > _relColunasBase) {
+        tr.removeChild(tr.lastElementChild);
+      }
+    });
+  }
+  clone.querySelectorAll("button").forEach(function(btn) { btn.remove(); });
+
+  // 2) Monta um wrapper fora da área com scroll, pra não sair em branco no html2canvas
+  var wrapper = document.createElement("div");
+  wrapper.style.position = "absolute";
+  wrapper.style.left = "-9999px";
+  wrapper.style.top = "0";
+  wrapper.style.background = "#FFFDF5";
+  wrapper.style.padding = "10px";
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  var btnPdf = document.getElementById("btnGerarPdf");
+  if (btnPdf) { btnPdf.disabled = true; btnPdf.textContent = "Gerando…"; }
+
+  html2pdf()
+    .set({
+      margin: 10,
+      filename: "Registro_" + new Date().toISOString().slice(0, 10) + ".pdf",
+      html2canvas: { scale: 2, scrollX: 0, scrollY: 0, useCORS: true },
+      jsPDF: { orientation: "landscape" }
+    })
+    .from(clone)
+    .save()
+    .then(function() { finalizarPdfRelatorio(wrapper, btnPdf); })
+    .catch(function() {
+      alertBox("Erro ao gerar o PDF.", true);
+      finalizarPdfRelatorio(wrapper, btnPdf);
+    });
+}
+
+function finalizarPdfRelatorio(wrapper, btnPdf) {
+  if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+  if (btnPdf) { btnPdf.disabled = false; btnPdf.textContent = "📄 Gerar PDF"; }
+}
+
+// ============================================================
+// LEITURA DE IMAGEM
+// ============================================================
+function readImageBase64(inputEl, previewId, hiddenId) {
+  if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var canvas = document.createElement("canvas");
+    var ctx    = canvas.getContext("2d");
+    var img    = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > 800) { h = Math.round(h * 800 / w); w = 800; }
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
+      var b64 = canvas.toDataURL("image/jpeg", 0.8);
+      var preview = document.getElementById(previewId);
+      if (preview) { preview.src = b64; preview.style.display = "block"; }
+      var hidden = document.getElementById(hiddenId);
+      if (hidden) hidden.value = b64;
+    };
+    img.onerror = function() { alertBox("Erro ao carregar imagem.", true); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function() { alertBox("Erro ao ler arquivo.", true); };
+  reader.readAsDataURL(inputEl.files[0]);
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function escHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function escAttr(str) {
+  return String(str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+}
+
+function setBtnCarregando(id, loading) {
+  var btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.innerHTML = '<span class="spinner"></span>Salvando…';
+  else btn.textContent = "✔ Confirmar";
+}
+</script>
+</body>
+</html>
+

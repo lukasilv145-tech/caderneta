@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "Caderneta de Gestão — AMQMI",
+  "short_name": "Caderneta",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffdf5",
+  "theme_color": "#7b263a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "description": "Registros e gestão da cooperativa, com uso offline."
+}

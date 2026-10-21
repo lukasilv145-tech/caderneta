@@ -1,0 +1,4 @@
+[functions.api]
+# The API validates its own short-lived signed session token. The public anon key
+# is still required by the gateway; privileged database keys stay server-side.
+verify_jwt = false
