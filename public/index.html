@@ -3228,8 +3228,13 @@ function repararFotosUsuarios() {
         if (item && item.encontradas) partes.push(grupo + ": " + item.atualizadas + "/" + item.encontradas + " recuperadas");
       });
       var msg = partes.length ? "Fotos recuperadas — " + partes.join("; ") + "." : "Não encontrei fotos antigas do Google Drive para recuperar.";
-      var faltas = resumo.equipe && resumo.equipe.semFoto || [];
-      if (faltas.length) msg += " " + faltas.length + " pessoa(s) estão sem foto cadastrada" + (faltas.length <= 5 ? ": " + faltas.join(", ") + "." : ". Atualize as fotos no cadastro da equipe.");
+      var faltasTotais = false;
+      [["equipe", "pessoa(s)"], ["produtos", "produto(s)"], ["salgados", "processado(s)"]].forEach(function(par) {
+        var faltas = resumo[par[0]] && resumo[par[0]].semFoto || [];
+        if (!faltas.length) return;
+        faltasTotais = true;
+        msg += " " + faltas.length + " " + par[1] + " sem foto cadastrada" + (faltas.length <= 5 ? ": " + faltas.join(", ") + "." : ". Envie fotos novas nos respectivos cadastros.");
+      });
       var falhas = [];
       Object.keys(resumo).forEach(function(grupo) {
         (resumo[grupo].falhas || []).forEach(function(nome) { falhas.push(nome + " (" + grupo + ")"); });
@@ -3243,7 +3248,7 @@ function repararFotosUsuarios() {
           if (avatar) { avatar.onerror = function() { this.onerror = null; this.src = FOTO_PESSOA; }; avatar.src = normalizarUrlImagem(atual.foto); }
         }
         renderEquipe();
-        alertBox(msg, !!falhas.length || !!faltas.length);
+        alertBox(msg, !!falhas.length || faltasTotais);
       });
     })
     .withFailureHandler(function(err) { alertBox("Erro ao recuperar fotos: " + (err ? err.message : "verifique a conexão."), true); })

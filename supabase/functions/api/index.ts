@@ -113,7 +113,7 @@ function legacyGoogleImageCandidates(value: unknown) {
   try {
     const url = new URL(clean(value));
     const host = url.hostname.toLowerCase();
-    if (host === "lh3.googleusercontent.com" || host === "drive.googleusercontent.com") return [url.href];
+    if (/^lh\d+\.googleusercontent\.com$/.test(host) || host === "drive.googleusercontent.com") return [url.href];
     if (host !== "drive.google.com" && host !== "docs.google.com" && host !== "drive.usercontent.google.com") return [];
     const pathMatch = url.pathname.match(/\/(?:file|document)?\/?d\/([^/]+)/i) || url.pathname.match(/\/d\/([^/]+)/i);
     const id = url.searchParams.get("id") || pathMatch?.[1];
