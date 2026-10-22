@@ -11,7 +11,16 @@ create table if not exists public.usuarios (
   telefone text not null default '',
   tipo text not null default 'Marisqueira',
   foto text not null default '',
+  pin_hash text not null default '',
   criado_em timestamptz not null default now()
+);
+alter table public.usuarios add column if not exists pin_hash text not null default '';
+
+create table if not exists public.tentativas_login (
+  chave_normalizada text primary key,
+  falhas integer not null default 0,
+  inicio_janela timestamptz not null default now(),
+  bloqueado_ate timestamptz
 );
 create table if not exists public.produtos (
   nome text primary key, tipo text not null default 'Marisco', unidade text not null default 'KG',
@@ -92,12 +101,62 @@ create index if not exists saidas_data_venda_idx on public.saidas(data_venda);
 create index if not exists saidas_chave_idx on public.saidas(chave_acesso_operador);
 
 do $$ declare t text; begin
-  foreach t in array array['usuarios','produtos','salgados','compradores','estoque_manual','entradas','producao','prod_salgados','saidas','estoque_associacao','metas','noticias','configuracoes','operacoes_offline'] loop
+  foreach t in array array['usuarios','tentativas_login','produtos','salgados','compradores','estoque_manual','entradas','producao','prod_salgados','saidas','estoque_associacao','metas','noticias','configuracoes','operacoes_offline'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
     execute format('grant all on public.%I to service_role', t);
   end loop;
 end $$;
+
+create or replace function public.hash_pin(p_pin text) returns text
+language plpgsql security definer set search_path=public,extensions as $$
+begin
+  if length(p_pin) < 8 or length(p_pin) > 64 or octet_length(convert_to(p_pin,'UTF8')) > 72 then
+    raise exception using errcode='22023', message='A senha deve ter entre 8 e 64 caracteres.';
+  end if;
+  return crypt(p_pin, gen_salt('bf', 10));
+end $$;
+
+create or replace function public.autenticar_usuario(p_chave text, p_pin text) returns jsonb
+language plpgsql security definer set search_path=public,extensions as $$
+declare
+  v_key text := regexp_replace(coalesce(p_chave,''),'[^0-9]','','g');
+  v_user public.usuarios%rowtype;
+  v_attempt public.tentativas_login%rowtype;
+  v_failures integer;
+begin
+  if length(v_key)=0 or length(v_key)>20 or length(coalesce(p_pin,''))<1 or octet_length(convert_to(p_pin,'UTF8'))>72 then
+    return jsonb_build_object('sucesso',false,'mensagem','Chave ou senha inválida.');
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('login:'||v_key,0));
+  select * into v_attempt from public.tentativas_login where chave_normalizada=v_key for update;
+  if not found then
+    insert into public.tentativas_login(chave_normalizada,falhas,inicio_janela) values(v_key,0,now()) on conflict do nothing;
+    select * into v_attempt from public.tentativas_login where chave_normalizada=v_key for update;
+  end if;
+  if found and v_attempt.bloqueado_ate > now() then
+    return jsonb_build_object('sucesso',false,'mensagem','Muitas tentativas. Aguarde 15 minutos e tente novamente.');
+  end if;
+  select * into v_user from public.usuarios
+    where regexp_replace(chave_acesso,'[^0-9]','','g')=v_key limit 1;
+  if found and v_user.pin_hash<>'' and crypt(p_pin,v_user.pin_hash)=v_user.pin_hash then
+    delete from public.tentativas_login where chave_normalizada=v_key;
+    return jsonb_build_object('sucesso',true,'chaveAcesso',v_user.chave_acesso,'nome',v_user.nome,
+      'telefone',v_user.telefone,'tipo',v_user.tipo,'foto',v_user.foto);
+  end if;
+  v_failures := case when v_attempt.inicio_janela < now()-interval '15 minutes' then 1 else v_attempt.falhas+1 end;
+  update public.tentativas_login set
+    falhas=v_failures,
+    inicio_janela=case when v_attempt.inicio_janela < now()-interval '15 minutes' then now() else v_attempt.inicio_janela end,
+    bloqueado_ate=case when v_failures>=5 then now()+interval '15 minutes' else null end
+    where chave_normalizada=v_key;
+  return jsonb_build_object('sucesso',false,'mensagem','Chave ou senha inválida.');
+end $$;
+
+revoke all on function public.hash_pin(text) from public,anon,authenticated;
+revoke all on function public.autenticar_usuario(text,text) from public,anon,authenticated;
+grant execute on function public.hash_pin(text) to service_role;
+grant execute on function public.autenticar_usuario(text,text) to service_role;
 
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('midia','midia',true,5242880,array['image/jpeg','image/png','image/webp'])
@@ -215,9 +274,59 @@ exception when others then
   on conflict(id) do update set estado=excluded.estado,mensagem=excluded.mensagem;
   return jsonb_build_object('id',p_id,'status',case when sqlstate like '22%' or sqlstate like '23%' then 'rejeitado' else 'retry' end,'msg',v_msg);
 end $$;
+
+create or replace function public.invalidar_registro(p_tabela text, p_id uuid, p_admin text, p_motivo text default '') returns text
+language plpgsql security definer set search_path=public as $$
+declare
+  v_table text;
+  v_row jsonb;
+  v_product text;
+  v_owner text;
+  v_quantity numeric;
+  v_item_type text;
+  v_destination text;
+begin
+  v_table := case p_tabela when 'Entradas' then 'entradas' when 'Producao' then 'producao'
+    when 'ProdSalgados' then 'prod_salgados' when 'Saidas' then 'saidas' else null end;
+  if v_table is null then raise exception using errcode='22023',message='Registro inválido para invalidação.'; end if;
+  execute format('select to_jsonb(r) from public.%I r where id=$1 for update',v_table) into v_row using p_id;
+  if v_row is null then raise exception using errcode='P0002',message='Registro não encontrado.'; end if;
+  if coalesce((v_row->>'invalidado')::boolean,false) then return 'Esse registro já estava invalidado.'; end if;
+
+  if v_table='entradas' then
+    perform public.apply_stock_delta(v_row->>'chave_marisqueira',v_row->>'nome_marisqueira','In Natura',v_row->>'produto',-coalesce((v_row->>'quantidade')::numeric,0),p_admin,false);
+  elsif v_table='producao' then
+    perform public.apply_stock_delta(v_row->>'chave_acesso_operador',v_row->>'operador','In Natura',v_row->>'marisco_origem',coalesce((v_row->>'peso_in_natura_usado')::numeric,0),p_admin,false);
+    perform public.apply_stock_delta(v_row->>'chave_acesso_operador',v_row->>'operador','Beneficiado',v_row->>'produto_final',-coalesce((v_row->>'qtd_gerada')::numeric,0),p_admin,false);
+  elsif v_table='prod_salgados' then
+    perform public.apply_stock_delta(v_row->>'chave_acesso_operador',v_row->>'operador','Salgado',v_row->>'salgado',-coalesce((v_row->>'quantidade')::numeric,0),p_admin,false);
+  elsif v_table='saidas' then
+    v_owner := v_row->>'chave_acesso_operador';
+    v_product := v_row->>'produto';
+    v_quantity := coalesce((v_row->>'quantidade')::numeric,0);
+    v_item_type := case when v_row->>'tipo_item'='salgado' then 'Salgado' else 'Beneficiado' end;
+    v_destination := v_row->>'destino';
+    if v_owner='ASSOCIACAO' then
+      insert into public.estoque_associacao(produto,quantidade,operador,chave_acesso_operador)
+      values(v_product,v_quantity,'Estorno: '||p_admin,'ASSOCIACAO');
+    else
+      perform public.apply_stock_delta(v_owner,'',v_item_type,v_product,v_quantity,p_admin,false);
+      if v_destination='Associação AMQMI' then
+        insert into public.estoque_associacao(produto,quantidade,operador,chave_acesso_operador)
+        values(v_product,-v_quantity,'Estorno: '||p_admin,v_owner);
+      end if;
+    end if;
+  end if;
+  execute format('update public.%I set invalidado=true,invalidado_por=$2,motivo_invalidacao=$3,data_invalidacao=now() where id=$1',v_table)
+    using p_id,p_admin,coalesce(p_motivo,'');
+  return 'Registro invalidado e mantido no relatório para auditoria.';
+end $$;
+
 revoke all on function public.apply_stock_delta(text,text,text,text,numeric,text,boolean) from public,anon,authenticated;
 revoke all on function public.require_stock(text,text,text,numeric) from public,anon,authenticated;
 revoke all on function public.processar_operacao_offline(text,text,jsonb,text,text,text) from public,anon,authenticated;
+revoke all on function public.invalidar_registro(text,uuid,text,text) from public,anon,authenticated;
 grant execute on function public.apply_stock_delta(text,text,text,text,numeric,text,boolean) to service_role;
 grant execute on function public.require_stock(text,text,text,numeric) to service_role;
 grant execute on function public.processar_operacao_offline(text,text,jsonb,text,text,text) to service_role;
+grant execute on function public.invalidar_registro(text,uuid,text,text) to service_role;

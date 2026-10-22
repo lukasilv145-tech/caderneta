@@ -17,14 +17,26 @@ Vendas e beneficiamento conferem o saldo novamente no servidor ao sincronizar. S
 ## Publicação
 
 1. Crie um projeto Supabase e execute `supabase/schema.sql` no SQL Editor.
-2. Antes do primeiro login, cadastre o administrador inicial pelo SQL Editor, substituindo os valores entre aspas pelos dados reais:
+2. A chave de acesso identifica a conta; agora cada pessoa também precisa de uma senha individual com pelo menos 8 caracteres. Para cadastrar o administrador inicial pelo SQL Editor, substitua os valores entre aspas e escolha uma senha forte:
 
    ```sql
-   insert into public.usuarios (chave_acesso, nome, tipo)
-   values ('CHAVE_DO_ADMIN', 'Nome do administrador', 'Administrativo');
+   set search_path = public, extensions;
+   insert into public.usuarios (chave_acesso, nome, tipo, pin_hash)
+   values ('CHAVE_DO_ADMIN', 'Nome do administrador', 'Administrativo',
+           crypt('SENHA_FORTE_DO_ADMIN', gen_salt('bf', 10)));
    ```
 
-   Não use a chave de exemplo. O acesso administrativo de emergência que existia no código antigo foi removido.
+   Não use os exemplos como credenciais reais. O hash é armazenado no banco; após cinco tentativas inválidas para a mesma chave, novas tentativas ficam bloqueadas por 15 minutos. Para contas que já existiam antes desta atualização, defina uma senha para cada uma pelo SQL Editor antes de publicar a nova API:
+
+   ```sql
+   set search_path = public, extensions;
+   update public.usuarios
+   set pin_hash = crypt('NOVA_SENHA_FORTE', gen_salt('bf', 10))
+   where chave_acesso = 'CHAVE_DA_CONTA';
+   ```
+
+   Repita com uma senha diferente para cada conta. A senha antiga não pode ser recuperada porque não era armazenada.
+   A nova versão exige novo login e invalida sessões emitidas pela versão anterior.
 3. Edite `public/app-config.js` e informe o URL do projeto e a chave pública `anon`/`publishable` do Supabase. Essa chave pública pode ficar no código; **não coloque a `service_role` no arquivo público**.
 4. Instale a CLI do Supabase, vincule este diretório ao projeto e cadastre um segredo longo para assinar sessões:
 
@@ -62,7 +74,7 @@ No importador CSV do Supabase, use somente as colunas da tabela de destino indic
 
 ## Cuidados antes de usar dados reais
 
-- O login por chave de acesso foi mantido para não alterar o fluxo atual. Como essa chave sozinha não é uma senha, troque por senha/PIN individual antes de guardar dados pessoais reais.
+- O login exige chave de acesso e senha individual. O acesso offline usa um verificador derivado localmente; não grava a senha em texto aberto.
 - Cadastre pelo menos uma conta administrativa e confira os perfis antes do piloto.
 - O plano gratuito do Supabase não oferece backup baixável e pode pausar projetos com pouca atividade. Para operação real, configure cópias de segurança e avalie o plano pago.
 - Cada celular guarda dados locais. Proteja os aparelhos com bloqueio de tela e não compartilhe o mesmo perfil do navegador entre usuários.

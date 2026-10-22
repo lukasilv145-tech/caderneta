@@ -712,7 +712,7 @@
     <!-- ======== LOGIN ======== -->
     <div id="screenLogin" class="screen active" style="text-align:center; padding-top:16px;">
       <div id="logoContainer" class="logo-app" style="background:white; display:flex; align-items:center; justify-content:center; font-size:48px; overflow:hidden;">
-        <img id="logoPrincipal" src="https://cdn-icons-png.flaticon.com/512/3060/3060790.png"
+        <img id="logoPrincipal" src="/icon.svg"
              style="width:100%;height:100%;object-fit:cover;"
              onerror="this.style.display='none'; document.getElementById('logoContainer').innerText='🦀'">
       </div>
@@ -721,6 +721,8 @@
       <div style="margin:28px 0 4px;">
         <label>Chave de Acesso</label>
         <input type="text" id="txtLoginChaveAcesso" placeholder="Somente números" inputmode="numeric" maxlength="20">
+        <label>Senha</label>
+        <input type="password" id="txtLoginSenha" placeholder="Mínimo de 8 caracteres" autocomplete="current-password" maxlength="64">
       </div>
       <button id="btnLogin" onclick="login()">Entrar →</button>
       <p style="font-family:'Source Serif 4',serif; font-style:italic; font-size:0.75rem; color:var(--tinta-2); margin-top:20px;">
@@ -733,7 +735,7 @@
       <div class="user-bar">
         <div style="display:flex; align-items:center; gap:10px;">
           <img id="imgUserSession" src="" class="user-avatar"
-               onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
+               onerror="this.onerror=null;this.src='/icon.svg'">
           <div>
             <div class="user-nome" id="lblNomeUsuario">…</div>
             <div class="user-tipo" id="lblTipoUsuario">…</div>
@@ -1118,6 +1120,8 @@
         <input type="text" id="cadUsrNome">
         <label>Telefone:</label>
         <input type="text" id="cadUsrTel" inputmode="tel">
+        <label>Senha de acesso <small>(deixe vazia para manter a atual)</small>:</label>
+        <input type="password" id="cadUsrSenha" autocomplete="new-password" minlength="8" maxlength="64" placeholder="Mínimo de 8 caracteres">
         <label>Perfil:</label>
         <select id="cadUsrTipo">
           <option value="Marisqueira">Marisqueira</option>
@@ -1275,9 +1279,9 @@ var userSession = null;
 var carrinhoEntradas = [];
 var _excluirCallback = null;
 var tipoVendaAtual = 'pescado';
-var FOTO_PESSOA  = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-var FOTO_PRODUTO = "https://cdn-icons-png.flaticon.com/512/2983/2983726.png";
-var FOTO_SALGADO = "https://cdn-icons-png.flaticon.com/512/3174/3174810.png";
+var FOTO_PESSOA  = "/icon.svg";
+var FOTO_PRODUTO = "/icon.svg";
+var FOTO_SALGADO = "/icon.svg";
 var FONTES = [12, 14, 16, 18, 21];
 var fonteAtual = 16;
 
@@ -1462,9 +1466,15 @@ function ajustarEstoqueLocal(chave, cat, nome, delta) {
   var k = OFF.EST + chave;
   var est = offLer(k, null) || { inNatura: [], beneficiado: [], salgados: [] };
   var lista = est[cat] || [];
+  var catalogo = cat === "salgados" ? (cacheApp.salgados || []) : (cacheApp.produtos || []);
+  var cadastro = catalogo.find(function (x) { return x.nome === nome; });
+  var foto = cadastro && cadastro.foto || "";
   var it = lista.filter(function (x) { return x.nome === nome; })[0];
-  if (it) it.qtd = Math.max(0, (parseFloat(it.qtd) || 0) + delta).toFixed(2);
-  else if (delta > 0) lista.push({ nome: nome, qtd: delta.toFixed(2), foto: "" });
+  if (it) {
+    it.qtd = Math.max(0, (parseFloat(it.qtd) || 0) + delta).toFixed(2);
+    if (!it.foto) it.foto = foto;
+  }
+  else if (delta > 0) lista.push({ nome: nome, qtd: delta.toFixed(2), foto: foto });
   est[cat] = lista.filter(function (x) { return (parseFloat(x.qtd) || 0) > 0.001; });
   offGravar(k, est);
 }
@@ -1641,12 +1651,12 @@ window.onload = async function() {
 
     // Offline: logo guardada da última vez; só consulta o servidor se houver internet
     var logoSalva = offLer("cg_logo_v1", "");
-    if (logoSalva) { var imgL = document.getElementById("logoPrincipal"); if (imgL) imgL.src = logoSalva; }
+    if (logoSalva) { var imgL = document.getElementById("logoPrincipal"); if (imgL) imgL.src = normalizarUrlImagem(logoSalva); }
     if (navigator.onLine) {
       AppAPI.run.withSuccessHandler(function(url) {
         if (url && url.length > 10) {
           var img = document.getElementById("logoPrincipal");
-          if (img) img.src = url;
+          if (img) img.src = normalizarUrlImagem(url);
           offGravar("cg_logo_v1", url);
         }
       }).obterLogoInicial();
@@ -1795,7 +1805,7 @@ function offEntrarComoUsuario(res) {
   if (res && res.token) localStorage.setItem("cg_session_token_v1", res.token);
   document.getElementById("lblNomeUsuario").innerText = res.nome || "Usuário";
   document.getElementById("lblTipoUsuario").innerText = res.tipo || "Marisqueira";
-  document.getElementById("imgUserSession").src = res.foto || FOTO_PESSOA;
+  document.getElementById("imgUserSession").src = normalizarUrlImagem(res.foto || FOTO_PESSOA);
 
   var isAdmin = (res.tipo === "Administrativo");
   document.getElementById("menuAdminArea").style.display = isAdmin ? "block" : "none";
@@ -1818,7 +1828,9 @@ function offEntrarComoUsuario(res) {
 
 function login() {
   var chaveAcesso = (document.getElementById("txtLoginChaveAcesso").value || "").trim();
+  var senha = document.getElementById("txtLoginSenha").value || "";
   if (!chaveAcesso) return alertBox("Preencha a chave de acesso.", true);
+  if (senha.length < 8) return alertBox("A senha deve ter pelo menos 8 caracteres.", true);
   var chaveNum = chaveAcesso.replace(/[^\d]/g, "");
   var btn = document.getElementById("btnLogin");
 
@@ -1827,12 +1839,17 @@ function login() {
   function tentarOffline() {
     liberarBotao();
     var logins = offLer(OFF.LOGINS, {});
-    if (logins[chaveNum]) {
-      alertBox("📴 Sem conexão: entrando com os dados salvos neste aparelho.", false);
-      offEntrarComoUsuario(logins[chaveNum]);
-    } else {
+    var saved = logins[chaveNum];
+    if (!saved || !saved.usuario || !saved.salt || !saved.verificador) {
       alertBox("Sem internet, e esta chave ainda não foi usada neste aparelho. Conecte-se no primeiro acesso.", true);
+      return;
     }
+    verificarSenhaOffline(senha, saved.salt).then(function(hash) {
+      if (hash !== saved.verificador) return alertBox("Chave ou senha inválida.", true);
+      alertBox("📴 Sem conexão: entrando com os dados salvos neste aparelho.", false);
+      document.getElementById("txtLoginSenha").value = "";
+      offEntrarComoUsuario(Object.assign({},saved.usuario,{ token:saved.token || "" }));
+    }).catch(function() { alertBox("Não foi possível validar a senha neste aparelho.", true); });
   }
 
   if (!navigator.onLine) return tentarOffline();
@@ -1843,16 +1860,46 @@ function login() {
     .withSuccessHandler(function (res) {
       liberarBotao();
       if (res && res.sucesso) {
-        var logins = offLer(OFF.LOGINS, {});
-        logins[chaveNum] = res;
-        offGravar(OFF.LOGINS, logins);
-        offEntrarComoUsuario(res);
+        criarCredencialOffline(senha).then(function(cred) {
+          var logins = offLer(OFF.LOGINS, {});
+          var perfil = { chaveAcesso:res.chaveAcesso,nome:res.nome,telefone:res.telefone,tipo:res.tipo,foto:res.foto };
+          logins[chaveNum] = { usuario:perfil,salt:cred.salt,verificador:cred.verificador,token:res.token };
+          offGravar(OFF.LOGINS, logins);
+          document.getElementById("txtLoginSenha").value = "";
+          offEntrarComoUsuario(res);
+        }).catch(function() { document.getElementById("txtLoginSenha").value = ""; offEntrarComoUsuario(res); });
       } else {
         alertBox(res ? res.mensagem : "Erro ao fazer login.", true);
       }
     })
     .withFailureHandler(function () { tentarOffline(); })
-    .realizarLogin(chaveAcesso);
+    .realizarLogin({ chaveAcesso:chaveAcesso, senha:senha });
+}
+
+function bytesBase64(bytes) {
+  var binary = "";
+  bytes.forEach(function(b) { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+
+function derivarSenhaOffline(senha, salt) {
+  var enc = new TextEncoder();
+  return crypto.subtle.importKey("raw", enc.encode(senha), "PBKDF2", false, ["deriveBits"])
+    .then(function(key) { return crypto.subtle.deriveBits({ name:"PBKDF2", salt:salt, iterations:150000, hash:"SHA-256" },key,256); })
+    .then(function(bits) { return bytesBase64(new Uint8Array(bits)); });
+}
+
+function criarCredencialOffline(senha) {
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  return derivarSenhaOffline(senha,salt).then(function(verificador) {
+    return { salt:bytesBase64(salt),verificador:verificador };
+  });
+}
+
+function verificarSenhaOffline(senha, saltBase64) {
+  var binary = atob(saltBase64);
+  var salt = Uint8Array.from(binary,function(c) { return c.charCodeAt(0); });
+  return derivarSenhaOffline(senha,salt);
 }
 
 function logout() {
@@ -1862,6 +1909,7 @@ function logout() {
   cacheApp = {};
   document.getElementById("barraAcesso").style.display = "none";
   document.getElementById("txtLoginChaveAcesso").value = "";
+  document.getElementById("txtLoginSenha").value = "";
   mudarJanela("screenLogin", false);
 }
 
@@ -1927,7 +1975,7 @@ function recarregarDados(callback) {
 function renderBanner(url) {
   var img = document.getElementById("imgBannerApp");
   if (!img) return;
-  if (url && url.length > 10) { img.src = url; img.style.display = "block"; }
+  if (url && url.length > 10) { img.src = normalizarUrlImagem(url); img.style.display = "block"; }
   else { img.style.display = "none"; }
 }
 
@@ -1940,7 +1988,7 @@ function renderNoticias(noticias) {
   }
   div.innerHTML = noticias.map(function(n) {
     var imgHtml = (n.fotoUrl && n.fotoUrl.length > 10)
-      ? '<img src="' + n.fotoUrl + '" class="noticia-img" onerror="this.style.display=\'none\'">'
+      ? '<img src="' + fotoAttr(n.fotoUrl, "") + '" class="noticia-img" onerror="this.style.display=\'none\'">'
       : "";
     return '<div class="noticia-item">'
       + '<strong>' + escHtml(n.titulo || "Sem título") + '</strong>'
@@ -1984,7 +2032,7 @@ function criarHtmlCards(lista, inputId, grupoClass, filtrarSelf) {
   if (!lista) return "";
   return ordenarPorNome(lista).map(function(item) {
     var val   = item.chaveAcesso || item.nome;
-    var img   = item.foto || FOTO_PRODUTO;
+    var img   = fotoAttr(item.foto || FOTO_PRODUTO,FOTO_PRODUTO);
     var label = (item.nome || "");
     var unid  = item.unidade ? '<small>' + escHtml(item.unidade) + '</small>' : '';
 
@@ -2008,7 +2056,7 @@ function criarHtmlCards(lista, inputId, grupoClass, filtrarSelf) {
 function criarHtmlCardsSalgados(lista, inputId, grupoClass) {
   if (!lista || lista.length === 0) return '<p class="badge-vazio">Nenhum produto processado cadastrado. Peça ao admin para cadastrar.</p>';
   return ordenarPorNome(lista).map(function(item) {
-    var img   = item.foto || FOTO_SALGADO;
+    var img   = fotoAttr(item.foto || FOTO_SALGADO,FOTO_SALGADO);
     var label = (item.nome || "");
     var unid  = item.unidade ? '<small>' + escHtml(item.unidade) + '</small>' : '';
     return '<div class="card-visual ' + grupoClass + '" '
@@ -2082,7 +2130,7 @@ function abrirTelaVenda() {
     var opcoes = pessoas.map(function(p) {
       return '<div class="card-visual grp-vend-sai" data-chave="' + escAttr(p.chaveAcesso) + '"'
         + ' onclick="selecionarVendedorVenda(this,\'' + escAttr(p.chaveAcesso) + '\')">'
-        + '<img src="' + (p.foto || FOTO_PESSOA) + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+        + '<img src="' + fotoAttr(p.foto,FOTO_PESSOA) + '" onerror="this.onerror=null;this.src=\'' + FOTO_PESSOA + '\'">'
         + '<span>' + escHtml(String(p.nome).replace(" (você)", "")) + '</span>'
         + '</div>';
     }).join("");
@@ -2172,7 +2220,7 @@ function renderCardsVendaEstoque() {
   } else {
     document.getElementById("gridProdutosSai").innerHTML = beneficiado.map(function(item) {
       var cad = (cacheApp.produtos || []).find(function(x) { return x.nome === item.nome; });
-      var img = (cad && cad.foto) ? cad.foto : FOTO_PRODUTO;
+      var img = fotoAttr(cad && cad.foto,FOTO_PRODUTO);
       var label = (item.nome || "");
       return '<div class="card-visual grp-p-sai" '
         + 'onclick="selecionarCardVenda(this,\'saiProdutoVal\',\'' + escAttr(item.nome) + '\',\'grp-p-sai\',' + item.qtd + ')">'
@@ -2190,7 +2238,7 @@ function renderCardsVendaEstoque() {
   } else {
     document.getElementById("gridSalgadosSai").innerHTML = salgados.filter(function(s){ return parseFloat(s.qtd) > 0; }).map(function(item) {
       var cad = (cacheApp.salgados || []).find(function(x) { return x.nome === item.nome; });
-      var img = (cad && cad.foto) ? cad.foto : FOTO_SALGADO;
+      var img = fotoAttr(cad && cad.foto,FOTO_SALGADO);
       var label = (item.nome || "");
       return '<div class="card-visual grp-s-sai" '
         + 'onclick="selecionarCardVenda(this,\'saiSalgadoVal\',\'' + escAttr(item.nome) + '\',\'grp-s-sai\',' + item.qtd + ')">'
@@ -2284,7 +2332,7 @@ function renderListaProdutos() {
   }
   var html = '<h3 style="margin-bottom:8px;">Produtos:</h3><div class="grid-visual">';
   ordenarPorNome(cacheApp.produtos).forEach(function(prod) {
-    var img     = prod.foto || FOTO_PRODUTO;
+    var img     = fotoAttr(prod.foto || FOTO_PRODUTO,FOTO_PRODUTO);
     var nomeEsc = escAttr(prod.nome || "");
     html += '<div class="card-visual" style="position:relative;">'
       + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'produto\',\'' + nomeEsc + '\')">×</button>'
@@ -2306,7 +2354,7 @@ function renderListaSalgados() {
   }
   var html = '<h3 style="margin-bottom:8px;">Produtos processados cadastrados:</h3><div class="grid-visual">';
   ordenarPorNome(cacheApp.salgados).forEach(function(s) {
-    var img     = s.foto || FOTO_SALGADO;
+    var img     = fotoAttr(s.foto || FOTO_SALGADO,FOTO_SALGADO);
     var nomeEsc = escAttr(s.nome || "");
     html += '<div class="card-visual" style="position:relative;">'
       + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'salgado\',\'' + nomeEsc + '\')">×</button>'
@@ -2331,7 +2379,7 @@ function renderListaCompradores() {
   }
   var html = '<h3 style="margin-bottom:8px;">Compradores:</h3><div class="grid-visual">';
   ordenarPorNome(lista).forEach(function(comp) {
-    var img     = comp.foto || FOTO_PESSOA;
+    var img     = fotoAttr(comp.foto || FOTO_PESSOA,FOTO_PESSOA);
     var nomeEsc = escAttr(comp.nome || "");
     html += '<div class="card-visual" style="position:relative;">'
       + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'comprador\',\'' + nomeEsc + '\')">×</button>'
@@ -2778,7 +2826,7 @@ function renderEstoqueAssociacao(lista) {
   }
   div.innerHTML = '<div class="grid-visual">' + lista.map(function(i) {
     var cad = (cacheApp.produtos || []).find(function(x) { return x.nome === i.nome; });
-    var img = (cad && cad.foto) ? cad.foto : FOTO_PRODUTO;
+    var img = fotoAttr(cad && cad.foto,FOTO_PRODUTO);
     return '<div class="estoque-card">'
       + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
       + '<div class="est-nome">' + escHtml(i.nome || "") + '</div>'
@@ -2794,7 +2842,7 @@ function renderEstoqueAdminPorMari(lista) {
   if (!lista || lista.length === 0) { div.innerHTML = '<p class="badge-vazio">Nenhuma pessoa.</p>'; return; }
 
   div.innerHTML = lista.map(function(pessoa) {
-    var img    = pessoa.foto || FOTO_PESSOA;
+    var img    = fotoAttr(pessoa.foto || FOTO_PESSOA,FOTO_PESSOA);
     // 3 categorias: inNatura, beneficiado, salgados
     var temInNatura = pessoa.inNatura && pessoa.inNatura.length > 0;
     var temBenef = pessoa.beneficiado && pessoa.beneficiado.length > 0;
@@ -2810,7 +2858,7 @@ function renderEstoqueAdminPorMari(lista) {
       return '<div class="grid-visual">' + listaItems.map(function(i) {
         var fonte = (tipo === 'Salgado') ? (cacheApp.salgados || []) : (cacheApp.produtos || []);
         var prod = fonte.find(function(x) { return x.nome === i.nome; });
-        var imgP = (prod && prod.foto) ? prod.foto : FOTO_PRODUTO;
+        var imgP = fotoAttr(prod && prod.foto,FOTO_PRODUTO);
         return '<div class="estoque-card">'
           + '<img src="' + imgP + '" onerror="this.src=\'' + FOTO_PRODUTO + '\'">'
           + '<div class="est-nome">' + escHtml(i.nome || "") + '</div>'
@@ -2911,7 +2959,9 @@ function renderMeuEstoqueManual(lista) {
   var contador = 0;
   function renderCards(produtos, tipo, unidadePadrao) {
     return '<div class="grid-visual">' + produtos.map(function(p) {
-      var img = p.foto || FOTO_PRODUTO;
+      var catalogo = tipo === 'Salgado' ? (cacheApp.salgados || []) : (cacheApp.produtos || []);
+      var cadastro = catalogo.find(function(x) { return x.nome === p.nome; });
+      var img = fotoAttr(p.foto || (cadastro && cadastro.foto) || FOTO_PRODUTO,FOTO_PRODUTO);
       var idCard = "estCard_" + (contador++);
       var unid = (tipo === 'Salgado') ? unidadeDoProcessado(p.nome) : unidadePadrao;
       return '<div class="estoque-card" id="' + idCard + '"'
@@ -3112,7 +3162,7 @@ function abrirCadastroUsuario() {
 function renderEquipe() {
   if (!cacheApp.todosUsuarios) return;
   var html = cacheApp.todosUsuarios.map(function(u) {
-    var img    = u.foto || FOTO_PESSOA;
+    var img    = fotoAttr(u.foto || FOTO_PESSOA,FOTO_PESSOA);
     var cpfEsc = escAttr(u.chaveAcesso || "");
     return '<div class="card-equipe" onclick="exibirFormularioNovoUsuario(\'' + cpfEsc + '\')">'
       + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
@@ -3132,6 +3182,8 @@ function exibirFormularioNovoUsuario(chaveAcesso) {
   document.getElementById("blocoFormularioUsuario").style.display = "block";
   document.getElementById("gridEquipeCompleta").style.display     = "none";
   document.getElementById("tempUsrFoto").value                    = "";
+  document.getElementById("cadUsrSenha").value = "";
+  document.getElementById("cadUsrSenha").placeholder = chaveAcesso ? "Deixe vazia para manter a atual" : "Mínimo de 8 caracteres";
   document.getElementById("previewUsrFoto").style.display         = "none";
   document.getElementById("cadUsrChaveAcesso").disabled                  = (chaveAcesso !== "");
   document.getElementById("btnExcluirUsuario").style.display      = (chaveAcesso !== "") ? "block" : "none";
@@ -3145,8 +3197,9 @@ function exibirFormularioNovoUsuario(chaveAcesso) {
       document.getElementById("cadUsrTel").value  = u.telefone || "";
       document.getElementById("cadUsrTipo").value = u.tipo || "Marisqueira";
       if (u.foto) {
-        document.getElementById("previewUsrFoto").src           = u.foto;
+        document.getElementById("previewUsrFoto").src           = normalizarUrlImagem(u.foto);
         document.getElementById("previewUsrFoto").style.display = "block";
+        document.getElementById("tempUsrFoto").value = u.foto;
       }
     }
   } else {
@@ -3169,7 +3222,8 @@ function salvarUsuarioForm() {
     nome:     (document.getElementById("cadUsrNome").value || "").trim(),
     telefone: (document.getElementById("cadUsrTel").value  || "").trim(),
     tipo:     document.getElementById("cadUsrTipo").value  || "Marisqueira",
-    fotoUrl:  document.getElementById("tempUsrFoto").value
+    fotoUrl:  document.getElementById("tempUsrFoto").value,
+    senha:    document.getElementById("cadUsrSenha").value
   };
   if (!p.chaveAcesso || !p.nome) return alertBox("Chave de Acesso e Nome são obrigatórios.", true);
 
@@ -3186,7 +3240,7 @@ function salvarUsuarioForm() {
   }
 
   if (p.fotoUrl && p.fotoUrl.length > 500) {
-    AppAPI.run.withSuccessHandler(finalizar).uploadFotoParaDrive(p.fotoUrl, "USR_" + p.chaveAcesso + ".jpg");
+    enviarImagem(p.fotoUrl, "USR_" + p.chaveAcesso + ".jpg", finalizar);
   } else {
     finalizar(p.fotoUrl || "");
   }
@@ -3200,20 +3254,15 @@ function salvarLogoForm() {
   var base64 = document.getElementById("tempLogoFoto").value;
   if (!base64 || base64.length < 100) return alertBox("Escolha uma imagem.", true);
   alertBox("Enviando…", false);
-  AppAPI.run
-    .withSuccessHandler(function(url) {
-      if (!url) return alertBox("Erro no upload.", true);
-      AppAPI.run
-        .withSuccessHandler(function(m) {
-          alertBox(m, false);
-          var img = document.getElementById("logoPrincipal");
-          if (img) img.src = url;
-          offGravar("cg_logo_v1", url);
-          voltarMenu();
-        })
-        .salvarLogo(url);
-    })
-    .uploadFotoParaDrive(base64, "LOGO_" + new Date().getTime() + ".jpg");
+  enviarImagem(base64, "LOGO_" + new Date().getTime() + ".jpg", function(url) {
+    AppAPI.run.withSuccessHandler(function(m) {
+      alertBox(m, false);
+      var img = document.getElementById("logoPrincipal");
+      if (img) img.src = normalizarUrlImagem(url);
+      offGravar("cg_logo_v1", url);
+      voltarMenu();
+    }).withFailureHandler(function(err) { alertBox("Erro ao salvar a logo: " + (err ? err.message : "desconhecido"), true); }).salvarLogo(url);
+  });
 }
 
 // ============================================================
@@ -3249,7 +3298,7 @@ function salvarNoticiaForm() {
       .salvarNoticia(p);
   }
   if (p.fotoUrl && p.fotoUrl.length > 500) {
-    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "AVISO.jpg");
+    enviarImagem(p.fotoUrl, "AVISO.jpg", gravar);
   } else {
     gravar("");
   }
@@ -3283,7 +3332,7 @@ function salvarProdutoForm() {
       .salvarProduto(p);
   }
   if (p.fotoUrl && p.fotoUrl.length > 500) {
-    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "PROD.jpg");
+    enviarImagem(p.fotoUrl, "PROD.jpg", gravar);
   } else {
     gravar("");
   }
@@ -3318,7 +3367,7 @@ function salvarSalgadoCadForm() {
       .salvarSalgado(p);
   }
   if (p.fotoUrl && p.fotoUrl.length > 500) {
-    AppAPI.run.withSuccessHandler(gravar).uploadFotoParaDrive(p.fotoUrl, "SALG.jpg");
+    enviarImagem(p.fotoUrl, "SALG.jpg", gravar);
   } else {
     gravar("");
   }
@@ -3419,7 +3468,7 @@ function puxarRelatorio() {
           var linhaHtml = "<tr" + (jaInvalido ? ' style="opacity:0.55;"' : '') + ">" + (l || []).map(function(c) { return "<td>" + escHtml(String(c || "")) + "</td>"; }).join("");
           if (isAdmin) {
             if (meta && !jaInvalido) {
-              linhaHtml += '<td id="cellInv_' + idx + '"><button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="pedirConfirmacaoInvalidar(' + idx + ',\'' + meta.sheet + '\',' + meta.linha + ')">🚫 Invalidar</button></td>';
+              linhaHtml += '<td id="cellInv_' + idx + '"><button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="pedirConfirmacaoInvalidar(' + idx + ',\'' + escAttr(meta.sheet) + '\',\'' + escAttr(meta.linha) + '\')">🚫 Invalidar</button></td>';
             } else {
               linhaHtml += "<td></td>";
             }
@@ -3525,6 +3574,10 @@ function finalizarPdfRelatorio(wrapper, btnPdf) {
 // ============================================================
 function readImageBase64(inputEl, previewId, hiddenId) {
   if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+  if (inputEl.files[0].size > 20 * 1024 * 1024) {
+    inputEl.value = "";
+    return alertBox("A imagem original deve ter até 20 MB.", true);
+  }
   var reader = new FileReader();
   reader.onload = function(e) {
     var canvas = document.createElement("canvas");
@@ -3532,10 +3585,13 @@ function readImageBase64(inputEl, previewId, hiddenId) {
     var img    = new Image();
     img.onload = function() {
       var w = img.width, h = img.height;
-      if (w > 800) { h = Math.round(h * 800 / w); w = 800; }
+      var scale = Math.min(1, 1200 / w, 1200 / h);
+      w = Math.max(1, Math.round(w * scale));
+      h = Math.max(1, Math.round(h * scale));
       canvas.width = w; canvas.height = h;
       ctx.drawImage(img, 0, 0, w, h);
-      var b64 = canvas.toDataURL("image/jpeg", 0.8);
+      var b64 = canvas.toDataURL("image/jpeg", 0.78);
+      if (b64.length > 4 * 1024 * 1024) return alertBox("A imagem ficou grande demais. Escolha uma imagem menor.", true);
       var preview = document.getElementById(previewId);
       if (preview) { preview.src = b64; preview.style.display = "block"; }
       var hidden = document.getElementById(hiddenId);
@@ -3559,7 +3615,37 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 function escAttr(str) {
-  return String(str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+  return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+}
+
+function normalizarUrlImagem(url) {
+  var value = String(url || "").trim();
+  if (!value) return "";
+  try {
+    var parsed = new URL(value, location.href);
+    if (/^(drive|docs)\.google\.com$/i.test(parsed.hostname)) {
+      var match = parsed.pathname.match(/\/file\/d\/([^/]+)/) || parsed.pathname.match(/\/d\/([^/]+)/);
+      var id = match ? match[1] : parsed.searchParams.get("id");
+      if (id) return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w1200";
+    }
+  } catch (_) {}
+  return value;
+}
+
+function fotoAttr(url, fallback) {
+  return escAttr(normalizarUrlImagem(url) || fallback || FOTO_PRODUTO);
+}
+
+function enviarImagem(base64, nome, concluir) {
+  AppAPI.run
+    .withSuccessHandler(function(url) {
+      if (!url) return alertBox("O servidor não retornou o endereço da imagem.", true);
+      concluir(url);
+    })
+    .withFailureHandler(function(err) {
+      alertBox("Falha ao enviar imagem: " + (err && err.message ? err.message : "verifique a conexão e tente novamente."), true);
+    })
+    .uploadFotoParaDrive(base64,nome);
 }
 
 function setBtnCarregando(id, loading) {

@@ -47,6 +47,7 @@ async function session(req: Request) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
   if (!await crypto.subtle.verify("HMAC", key, unb64url(parts[2]), new TextEncoder().encode(`${parts[0]}.${parts[1]}`))) throw new Error("Sessão inválida. Faça login novamente.");
   const claims = JSON.parse(new TextDecoder().decode(unb64url(parts[1])));
+  if (claims.authVersion !== 2) throw new Error("Sessão inválida. Faça login novamente.");
   if (!claims.exp || claims.exp < Date.now() / 1000) throw new Error("Sessão expirada. Faça login novamente.");
   const current = await one("usuarios", "chave_acesso", claims.chaveAcesso);
   if (!current) throw new Error("Usuário não encontrado. Faça login novamente.");
@@ -94,14 +95,22 @@ async function applyOperation(id: string, fn: string, payload: any, user: { chav
   if (error) return { id, status: "retry", msg: error.message || "Falha temporária ao sincronizar." };
   return data;
 }
-async function stockFor(key: string | null) {
+async function stockFor(key: string | null, catalog?: { products: any[]; salty: any[] }) {
   let q = supabase.from("estoque_manual").select("*");
   if (key) q = q.eq("chave_acesso", key);
-  const { data, error } = await q;
+  const [{ data, error }, products, salty] = await Promise.all([
+    q, catalog ? Promise.resolve(catalog.products) : rows("produtos"),
+    catalog ? Promise.resolve(catalog.salty) : rows("salgados"),
+  ]);
   if (error) throw error;
+  const productPhotos = new Map(products.map(p => [p.nome, p.foto || ""]));
+  const saltyPhotos = new Map(salty.map(p => [p.nome, p.foto || ""]));
   const result: Record<string, any[]> = { inNatura: [], beneficiado: [], salgados: [] };
   const groups: Record<string, any[]> = { "In Natura": result.inNatura, "Beneficiado": result.beneficiado, "Salgado": result.salgados };
-  for (const r of data || []) if (num(r.quantidade) > 0.001) groups[r.tipo]?.push({ nome: r.produto, qtd: num(r.quantidade).toFixed(2), foto: "" });
+  for (const r of data || []) if (num(r.quantidade) > 0.001) {
+    const photo = r.tipo === "Salgado" ? saltyPhotos.get(r.produto) : productPhotos.get(r.produto);
+    groups[r.tipo]?.push({ nome: r.produto, qtd: num(r.quantidade).toFixed(2), foto: photo || "" });
+  }
   for (const list of Object.values(result)) list.sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return result;
 }
@@ -153,8 +162,10 @@ async function report(f: any, user: { chaveAcesso:string; nome:string; tipo:stri
   records.forEach((r: any, index: number) => {
     const refDate = type === "entrada" ? r.data_mariscagem : type === "salgado" ? r.data_referencia : r.data_venda;
     if (refDate < start || refDate > end) return;
-    if (user.tipo !== "Administrativo" && r.chave_acesso_operador && r.chave_acesso_operador !== user.chaveAcesso && r.chave_marisqueira !== user.chaveAcesso) return;
-    if (type !== "saida" && f.marisqueiraChave && (r.chave_marisqueira || r.chave_acesso_operador) !== f.marisqueiraChave) return;
+    const ownerKey = type === "entrada" ? r.chave_marisqueira : r.chave_acesso_operador;
+    if (user.tipo !== "Administrativo" && ownerKey !== user.chaveAcesso) return;
+    const requestedKey = user.tipo === "Administrativo" ? f.marisqueiraChave : user.chaveAcesso;
+    if (type !== "saida" && requestedKey && ownerKey !== requestedKey) return;
     if (type === "saida") {
       const seller = mapName(r.chave_acesso_operador, r.operador);
       if (f.vendedor && seller !== f.vendedor && r.operador !== f.vendedor) return;
@@ -177,12 +188,15 @@ async function dispatch(action: string, args: any, user: any) {
   const payload = Array.isArray(args) ? args[0] : args;
   switch (action) {
     case "realizarLogin": {
-      const key = clean(args).replace(/\D/g, "");
-      if (!key) return { sucesso:false,mensagem:"Chave de acesso inválida!" };
-      const found = (await rows("usuarios")).find(u => clean(u.chave_acesso).replace(/\D/g, "") === key);
-      if (!found) return { sucesso:false,mensagem:"Chave de acesso não encontrada!" };
-      const shape = userShape(found);
-      const token = await sign({ ...shape, exp:Math.floor(Date.now()/1000)+60*60*24*30 });
+      const credentials = Array.isArray(args) ? args[0] : args;
+      const key = clean(credentials?.chaveAcesso);
+      const pin = clean(credentials?.senha);
+      if (!key || !pin) return { sucesso:false,mensagem:"Informe a chave de acesso e a senha." };
+      const { data, error } = await supabase.rpc("autenticar_usuario", { p_chave:key, p_pin:pin });
+      if (error) throw error;
+      if (!data?.sucesso) return data || { sucesso:false,mensagem:"Chave ou senha inválida." };
+      const shape = { chaveAcesso:data.chaveAcesso,nome:data.nome,telefone:data.telefone,tipo:data.tipo,foto:data.foto };
+      const token = await sign({ ...shape, authVersion:2, exp:Math.floor(Date.now()/1000)+60*60*24*7 });
       return { sucesso:true,...shape,token };
     }
     case "buscarOpcoesFormularios": return await options(user);
@@ -197,15 +211,16 @@ async function dispatch(action: string, args: any, user: any) {
     case "obterEstoqueAssociacao": requireAdmin(user); return await inventoryAssociation();
     case "obterEstoqueAdminCompleto": {
       requireAdmin(user);
-      const users = await rows("usuarios","nome");
+      const [users, products, salty] = await Promise.all([rows("usuarios","nome"),rows("produtos"),rows("salgados")]);
+      const catalog = { products, salty };
       const porMari = [];
       for (const u of users) {
-        const est = await stockFor(u.chave_acesso);
+        const est = await stockFor(u.chave_acesso,catalog);
         porMari.push({ chaveAcesso:u.chave_acesso,nome:u.nome,tipo:u.tipo,foto:u.foto,
           inNatura:est.inNatura,beneficiado:est.beneficiado,salgados:est.salgados,
           temEstoque:est.inNatura.length+est.beneficiado.length+est.salgados.length>0 });
       }
-      return { porMari, geral:await stockFor(null) };
+      return { porMari, geral:await stockFor(null,catalog) };
     }
     case "salvarEstoqueManual": {
       const key = user.tipo === "Administrativo" ? clean(payload.chaveAcesso) : user.chaveAcesso;
@@ -221,7 +236,17 @@ async function dispatch(action: string, args: any, user: any) {
     case "salvarUsuario": {
       requireAdmin(user);
       if (!payload.chaveAcesso || !payload.nome) return "Chave de Acesso e Nome são obrigatórios!";
-      const { error } = await supabase.from("usuarios").upsert({ chave_acesso:clean(payload.chaveAcesso),nome:clean(payload.nome),telefone:clean(payload.telefone),tipo:clean(payload.tipo)||"Marisqueira",foto:clean(payload.fotoUrl) });
+      const key = clean(payload.chaveAcesso);
+      const existing = await one("usuarios","chave_acesso",key);
+      const pin = clean(payload.senha);
+      if (!existing && !pin) throw new Error("Defina uma senha com pelo menos 8 caracteres para o novo usuário.");
+      const userRecord: Record<string,unknown> = { chave_acesso:key,nome:clean(payload.nome),telefone:clean(payload.telefone),tipo:clean(payload.tipo)||"Marisqueira",foto:clean(payload.fotoUrl) };
+      if (pin) {
+        const { data: pinHash, error: hashError } = await supabase.rpc("hash_pin", { p_pin:pin });
+        if (hashError) throw hashError;
+        userRecord.pin_hash = pinHash;
+      }
+      const { error } = await supabase.from("usuarios").upsert(userRecord);
       if (error) throw error;
       return "Cadastro atualizado!";
     }
@@ -249,41 +274,21 @@ async function dispatch(action: string, args: any, user: any) {
     case "uploadFotoParaDrive": {
       requireAdmin(user); const data=clean(args[0]), name=clean(args[1])||`imagem-${Date.now()}.jpg`;
       const match=data.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/); if(!match) throw new Error("Formato de imagem inválido.");
+      if(match[2].length>7*1024*1024) throw new Error("A imagem deve ter até 5 MB.");
       const binary=atob(match[2]), bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
       if(bytes.length>5*1024*1024) throw new Error("A imagem deve ter até 5 MB.");
-      const path=`${Date.now()}-${name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+      const path=`${crypto.randomUUID()}-${name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
       const {error}=await supabase.storage.from("midia").upload(path,bytes,{contentType:match[1],upsert:false}); if(error) throw error;
       return supabase.storage.from("midia").getPublicUrl(path).data.publicUrl;
     }
     case "gerarRelatorio": requireOnline(user); return await report(payload,user);
     case "invalidarRegistro": {
       requireAdmin(user);
-      const table=payload.sheet === "Entradas" ? "entradas" : payload.sheet === "ProdSalgados" ? "prod_salgados" : payload.sheet === "Saidas" ? "saidas" : "";
-      if (!table) return "Registro inválido para invalidação.";
-      const row=await one(table,"id",clean(payload.linha)); if(!row) return "Registro não encontrado.";
-      if(row.invalidado) return "Esse registro já estava invalidado.";
-      if (table === "entradas") {
-        await saveStock(row.chave_marisqueira,row.nome_marisqueira,"In Natura",row.produto,-num(row.quantidade),user.nome);
-      } else if (table === "producao") {
-        await saveStock(row.chave_acesso_operador,"","In Natura",row.marisco_origem,num(row.peso_in_natura_usado),user.nome);
-        await saveStock(row.chave_acesso_operador,"","Beneficiado",row.produto_final,-num(row.qtd_gerada),user.nome);
-      } else if (table === "prod_salgados") {
-        await saveStock(row.chave_acesso_operador,"","Salgado",row.salgado,-num(row.quantidade),user.nome);
-      } else if (table === "saidas") {
-        if (row.chave_acesso_operador === "ASSOCIACAO") {
-          const {error:stockError}=await supabase.from("estoque_associacao").insert({produto:row.produto,quantidade:num(row.quantidade),operador:`Estorno: ${user.nome}`,chave_acesso_operador:"ASSOCIACAO"});
-          if(stockError) throw stockError;
-        } else {
-          await saveStock(row.chave_acesso_operador,"",row.tipo_item === "salgado" ? "Salgado" : "Beneficiado",row.produto,num(row.quantidade),user.nome);
-          if(row.destino === "Associação AMQMI") {
-            const {error:stockError}=await supabase.from("estoque_associacao").insert({produto:row.produto,quantidade:-num(row.quantidade),operador:`Estorno: ${user.nome}`,chave_acesso_operador:row.chave_acesso_operador});
-            if(stockError) throw stockError;
-          }
-        }
-      }
-      const {error}=await supabase.from(table).update({invalidado:true,invalidado_por:user.nome,motivo_invalidacao:clean(payload.motivo),data_invalidacao:new Date().toISOString()}).eq("id",row.id);
-      if(error) throw error;
-      return "Registro invalidado e mantido no relatório para auditoria.";
+      const { data, error } = await supabase.rpc("invalidar_registro", {
+        p_tabela:clean(payload.sheet),p_id:clean(payload.linha),p_admin:user.nome,p_motivo:clean(payload.motivo),
+      });
+      if (error) throw error;
+      return data;
     }
     default: throw new Error(`Operação não implementada: ${action}`);
   }
