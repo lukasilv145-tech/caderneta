@@ -1277,6 +1277,8 @@ var userSession = null;
 var carrinhoEntradas = [];
 var _excluirCallback = null;
 var tipoVendaAtual = 'pescado';
+var estoqueBeneficiamentoAtual = [];
+var limiteEstoqueBeneficiamento = 0;
 var FOTO_PESSOA  = "/icon.svg";
 var FOTO_PRODUTO = "/icon.svg";
 var FOTO_SALGADO = "/icon.svg";
@@ -1763,6 +1765,12 @@ function mudarJanela(id, wide) {
   var screen = document.getElementById(id);
   if (screen) screen.classList.add("active");
   window.scrollTo(0, 0);
+  if (id === "screenProducao") {
+    var chaveBenef = userSession && userSession.tipo !== "Administrativo"
+      ? userSession.chaveAcesso
+      : document.getElementById("procMarisqueiraVal").value;
+    atualizarProdutosOrigemBeneficiamento(chaveBenef);
+  }
 
   if (!_bloqueiaPushHistorico) {
     try {
@@ -2066,7 +2074,7 @@ function gerarCartoesVisuais() {
   document.getElementById("gridMarisqueirasEnt").innerHTML  = criarHtmlCards(listaAlvosProducao(), "entMarisqueiraVal", "grp-m-ent", true);
   document.getElementById("gridProdutosEnt").innerHTML      = criarHtmlCards(cacheApp.produtos,     "entProdutoVal",     "grp-p-ent", false);
   document.getElementById("gridMarisqueirasProc").innerHTML = criarHtmlCards(listaAlvosProducao(), "procMarisqueiraVal","grp-m-proc", false);
-  document.getElementById("gridOrigemProc").innerHTML       = criarHtmlCards(cacheApp.produtos,     "procOrigemVal",     "grp-p-origem", false);
+  document.getElementById("gridOrigemProc").innerHTML       = '<p class="badge-vazio">Selecione uma pessoa para ver o estoque in natura disponível.</p>';
   document.getElementById("gridFimProc").innerHTML          = criarHtmlCards(cacheApp.produtos,     "procProdFinalVal",  "grp-p-fim", false);
   document.getElementById("gridMarisqueirasSalg").innerHTML = criarHtmlCards(listaAlvosProducao(), "salgMarisqueiraVal","grp-m-salg", false);
   document.getElementById("gridSalgadosProd").innerHTML     = criarHtmlCardsSalgados(cacheApp.salgados, "salgTipoVal", "grp-s-prod");
@@ -2260,6 +2268,12 @@ function selecionarCard(elem, id, val, grupo) {
     var esporadicoDiv = document.getElementById("divNomeEsporadico");
     if (esporadicoDiv) esporadicoDiv.style.display = (val === "Comprador Esporádico") ? "block" : "none";
   }
+  if (id === "procMarisqueiraVal") {
+    document.getElementById("procProdFinalVal").value = "";
+    document.querySelectorAll(".grp-p-fim").forEach(function(c) { c.classList.remove("selecionado"); });
+    atualizarProdutosOrigemBeneficiamento(val);
+  }
+  if (id === "procOrigemVal") selecionarOrigemBeneficiamento(val);
 }
 
 // ============================================================
@@ -2506,12 +2520,72 @@ function salvarEntradaForm() {
 // ============================================================
 // BENEFICIAMENTO
 // ============================================================
+function atualizarProdutosOrigemBeneficiamento(chave) {
+  var grid = document.getElementById("gridOrigemProc");
+  var origem = document.getElementById("procOrigemVal");
+  var bruto = document.getElementById("procBruto");
+  estoqueBeneficiamentoAtual = [];
+  limiteEstoqueBeneficiamento = 0;
+  if (origem) origem.value = "";
+  if (bruto) {
+    bruto.value = "";
+    bruto.max = "";
+    bruto.disabled = true;
+    bruto.placeholder = "Selecione um produto";
+  }
+  document.getElementById("procLimpo").value = "";
+  document.getElementById("procPerdas").value = "";
+  document.querySelectorAll(".grp-p-origem").forEach(function(card) { card.classList.remove("selecionado"); });
+  if (!grid) return;
+  if (!chave) {
+    grid.innerHTML = '<p class="badge-vazio">Selecione uma pessoa para ver o estoque in natura disponível.</p>';
+    return;
+  }
+  grid.innerHTML = '<p class="badge-vazio">Carregando estoque in natura…</p>';
+  offEstoqueDe(chave, function(estoque) {
+    if (userSession && userSession.tipo === "Administrativo" && document.getElementById("procMarisqueiraVal").value !== chave) return;
+    estoqueBeneficiamentoAtual = (estoque && estoque.inNatura || []).filter(function(item) {
+      return (parseFloat(item.qtd) || 0) > 0.001;
+    });
+    if (!estoqueBeneficiamentoAtual.length) {
+      grid.innerHTML = '<p class="badge-vazio">Esta pessoa não possui produto in natura disponível para beneficiar.</p>';
+      return;
+    }
+    grid.innerHTML = estoqueBeneficiamentoAtual.map(function(item) {
+      return '<div class="card-visual grp-p-origem" onclick="selecionarCard(this,\'procOrigemVal\',\'' + escAttr(item.nome) + '\',\'grp-p-origem\')">'
+        + '<img src="' + fotoAttr(item.foto || FOTO_PRODUTO,FOTO_PRODUTO) + '" onerror="this.onerror=null;this.src=\'' + FOTO_PRODUTO + '\'">'
+        + '<span>' + escHtml(item.nome) + '</span>'
+        + '<small>Disponível: ' + (parseFloat(item.qtd) || 0).toFixed(2) + ' KG</small>'
+        + '</div>';
+    }).join("");
+  });
+}
+
+function selecionarOrigemBeneficiamento(nome) {
+  var item = estoqueBeneficiamentoAtual.find(function(x) { return x.nome === nome; });
+  var bruto = document.getElementById("procBruto");
+  limiteEstoqueBeneficiamento = item ? Math.max(0, parseFloat(item.qtd) || 0) : 0;
+  if (bruto) {
+    bruto.value = "";
+    bruto.max = limiteEstoqueBeneficiamento.toFixed(2);
+    bruto.disabled = !item;
+    bruto.placeholder = item ? "Máximo: " + limiteEstoqueBeneficiamento.toFixed(2) + " KG" : "Selecione um produto";
+  }
+  if (item) alertBox("Disponível para beneficiamento: " + limiteEstoqueBeneficiamento.toFixed(2) + " KG.", false);
+}
+
 function salvarProducaoForm() {
   var pOrigem = document.getElementById("procOrigemVal").value;
   var pFim    = document.getElementById("procProdFinalVal").value;
   var pBruto  = document.getElementById("procBruto").value;
   var pLimpo  = document.getElementById("procLimpo").value;
   if (!pOrigem || !pFim || !pBruto || !pLimpo) return alertBox("Preencha todos os campos.", true);
+  var quantidadeBruta = parseFloat(pBruto);
+  var itemOrigem = estoqueBeneficiamentoAtual.find(function(item) { return item.nome === pOrigem; });
+  var disponivel = itemOrigem ? Math.max(0, parseFloat(itemOrigem.qtd) || 0) : 0;
+  if (!itemOrigem || disponivel <= 0) return alertBox("O produto selecionado não está disponível no estoque in natura desta pessoa.", true);
+  if (!Number.isFinite(quantidadeBruta) || quantidadeBruta <= 0) return alertBox("Informe um peso bruto válido.", true);
+  if (quantidadeBruta > disponivel + 0.001) return alertBox("O peso bruto não pode passar do estoque disponível (" + disponivel.toFixed(2) + " KG).", true);
 
   var isAdmin  = userSession && userSession.tipo === "Administrativo";
   var cpfAlvo, nomeAlvo;

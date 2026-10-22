@@ -1,4 +1,4 @@
-const CACHE_NAME = "caderneta-shell-v4";
+const CACHE_NAME = "caderneta-shell-v5";
 const APP_SHELL = ["/", "/index.html", "/app-config.js", "/api-bridge.js", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", event => {
