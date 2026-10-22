@@ -188,14 +188,11 @@ async function dispatch(action: string, args: any, user: any) {
   const payload = Array.isArray(args) ? args[0] : args;
   switch (action) {
     case "realizarLogin": {
-      const credentials = Array.isArray(args) ? args[0] : args;
-      const key = clean(credentials?.chaveAcesso);
-      const pin = clean(credentials?.senha);
-      if (!key || !pin) return { sucesso:false,mensagem:"Informe a chave de acesso e a senha." };
-      const { data, error } = await supabase.rpc("autenticar_usuario", { p_chave:key, p_pin:pin });
-      if (error) throw error;
-      if (!data?.sucesso) return data || { sucesso:false,mensagem:"Chave ou senha inválida." };
-      const shape = { chaveAcesso:data.chaveAcesso,nome:data.nome,telefone:data.telefone,tipo:data.tipo,foto:data.foto };
+      const key = clean(Array.isArray(args) ? args[0] : args).replace(/\D/g, "");
+      if (!key) return { sucesso:false,mensagem:"Informe a chave de acesso." };
+      const found = (await rows("usuarios")).find(u => clean(u.chave_acesso).replace(/\D/g, "") === key);
+      if (!found) return { sucesso:false,mensagem:"Chave de acesso não encontrada." };
+      const shape = { chaveAcesso:found.chave_acesso,nome:found.nome,telefone:found.telefone,tipo:found.tipo,foto:found.foto };
       const token = await sign({ ...shape, authVersion:2, exp:Math.floor(Date.now()/1000)+60*60*24*7 });
       return { sucesso:true,...shape,token };
     }
@@ -237,16 +234,7 @@ async function dispatch(action: string, args: any, user: any) {
       requireAdmin(user);
       if (!payload.chaveAcesso || !payload.nome) return "Chave de Acesso e Nome são obrigatórios!";
       const key = clean(payload.chaveAcesso);
-      const existing = await one("usuarios","chave_acesso",key);
-      const pin = clean(payload.senha);
-      if (!existing && !pin) throw new Error("Defina uma senha com pelo menos 8 caracteres para o novo usuário.");
-      const userRecord: Record<string,unknown> = { chave_acesso:key,nome:clean(payload.nome),telefone:clean(payload.telefone),tipo:clean(payload.tipo)||"Marisqueira",foto:clean(payload.fotoUrl) };
-      if (pin) {
-        const { data: pinHash, error: hashError } = await supabase.rpc("hash_pin", { p_pin:pin });
-        if (hashError) throw hashError;
-        userRecord.pin_hash = pinHash;
-      }
-      const { error } = await supabase.from("usuarios").upsert(userRecord);
+      const { error } = await supabase.from("usuarios").upsert({ chave_acesso:key,nome:clean(payload.nome),telefone:clean(payload.telefone),tipo:clean(payload.tipo)||"Marisqueira",foto:clean(payload.fotoUrl) });
       if (error) throw error;
       return "Cadastro atualizado!";
     }

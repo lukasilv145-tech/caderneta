@@ -721,8 +721,6 @@
       <div style="margin:28px 0 4px;">
         <label>Chave de Acesso</label>
         <input type="text" id="txtLoginChaveAcesso" placeholder="Somente números" inputmode="numeric" maxlength="20">
-        <label>Senha</label>
-        <input type="password" id="txtLoginSenha" placeholder="Mínimo de 8 caracteres" autocomplete="current-password" maxlength="64">
       </div>
       <button id="btnLogin" onclick="login()">Entrar →</button>
       <p style="font-family:'Source Serif 4',serif; font-style:italic; font-size:0.75rem; color:var(--tinta-2); margin-top:20px;">
@@ -1120,8 +1118,6 @@
         <input type="text" id="cadUsrNome">
         <label>Telefone:</label>
         <input type="text" id="cadUsrTel" inputmode="tel">
-        <label>Senha de acesso <small>(deixe vazia para manter a atual)</small>:</label>
-        <input type="password" id="cadUsrSenha" autocomplete="new-password" minlength="8" maxlength="64" placeholder="Mínimo de 8 caracteres">
         <label>Perfil:</label>
         <select id="cadUsrTipo">
           <option value="Marisqueira">Marisqueira</option>
@@ -1828,9 +1824,7 @@ function offEntrarComoUsuario(res) {
 
 function login() {
   var chaveAcesso = (document.getElementById("txtLoginChaveAcesso").value || "").trim();
-  var senha = document.getElementById("txtLoginSenha").value || "";
   if (!chaveAcesso) return alertBox("Preencha a chave de acesso.", true);
-  if (senha.length < 8) return alertBox("A senha deve ter pelo menos 8 caracteres.", true);
   var chaveNum = chaveAcesso.replace(/[^\d]/g, "");
   var btn = document.getElementById("btnLogin");
 
@@ -1840,16 +1834,13 @@ function login() {
     liberarBotao();
     var logins = offLer(OFF.LOGINS, {});
     var saved = logins[chaveNum];
-    if (!saved || !saved.usuario || !saved.salt || !saved.verificador) {
+    if (saved && saved.usuario) saved = Object.assign({},saved.usuario,{ token:saved.token || "" });
+    if (!saved) {
       alertBox("Sem internet, e esta chave ainda não foi usada neste aparelho. Conecte-se no primeiro acesso.", true);
       return;
     }
-    verificarSenhaOffline(senha, saved.salt).then(function(hash) {
-      if (hash !== saved.verificador) return alertBox("Chave ou senha inválida.", true);
-      alertBox("📴 Sem conexão: entrando com os dados salvos neste aparelho.", false);
-      document.getElementById("txtLoginSenha").value = "";
-      offEntrarComoUsuario(Object.assign({},saved.usuario,{ token:saved.token || "" }));
-    }).catch(function() { alertBox("Não foi possível validar a senha neste aparelho.", true); });
+    alertBox("📴 Sem conexão: entrando com os dados salvos neste aparelho.", false);
+    offEntrarComoUsuario(saved);
   }
 
   if (!navigator.onLine) return tentarOffline();
@@ -1860,46 +1851,16 @@ function login() {
     .withSuccessHandler(function (res) {
       liberarBotao();
       if (res && res.sucesso) {
-        criarCredencialOffline(senha).then(function(cred) {
-          var logins = offLer(OFF.LOGINS, {});
-          var perfil = { chaveAcesso:res.chaveAcesso,nome:res.nome,telefone:res.telefone,tipo:res.tipo,foto:res.foto };
-          logins[chaveNum] = { usuario:perfil,salt:cred.salt,verificador:cred.verificador,token:res.token };
-          offGravar(OFF.LOGINS, logins);
-          document.getElementById("txtLoginSenha").value = "";
-          offEntrarComoUsuario(res);
-        }).catch(function() { document.getElementById("txtLoginSenha").value = ""; offEntrarComoUsuario(res); });
+        var logins = offLer(OFF.LOGINS, {});
+        logins[chaveNum] = res;
+        offGravar(OFF.LOGINS, logins);
+        offEntrarComoUsuario(res);
       } else {
         alertBox(res ? res.mensagem : "Erro ao fazer login.", true);
       }
     })
     .withFailureHandler(function () { tentarOffline(); })
-    .realizarLogin({ chaveAcesso:chaveAcesso, senha:senha });
-}
-
-function bytesBase64(bytes) {
-  var binary = "";
-  bytes.forEach(function(b) { binary += String.fromCharCode(b); });
-  return btoa(binary);
-}
-
-function derivarSenhaOffline(senha, salt) {
-  var enc = new TextEncoder();
-  return crypto.subtle.importKey("raw", enc.encode(senha), "PBKDF2", false, ["deriveBits"])
-    .then(function(key) { return crypto.subtle.deriveBits({ name:"PBKDF2", salt:salt, iterations:150000, hash:"SHA-256" },key,256); })
-    .then(function(bits) { return bytesBase64(new Uint8Array(bits)); });
-}
-
-function criarCredencialOffline(senha) {
-  var salt = crypto.getRandomValues(new Uint8Array(16));
-  return derivarSenhaOffline(senha,salt).then(function(verificador) {
-    return { salt:bytesBase64(salt),verificador:verificador };
-  });
-}
-
-function verificarSenhaOffline(senha, saltBase64) {
-  var binary = atob(saltBase64);
-  var salt = Uint8Array.from(binary,function(c) { return c.charCodeAt(0); });
-  return derivarSenhaOffline(senha,salt);
+    .realizarLogin(chaveAcesso);
 }
 
 function logout() {
@@ -1909,7 +1870,6 @@ function logout() {
   cacheApp = {};
   document.getElementById("barraAcesso").style.display = "none";
   document.getElementById("txtLoginChaveAcesso").value = "";
-  document.getElementById("txtLoginSenha").value = "";
   mudarJanela("screenLogin", false);
 }
 
@@ -3182,8 +3142,6 @@ function exibirFormularioNovoUsuario(chaveAcesso) {
   document.getElementById("blocoFormularioUsuario").style.display = "block";
   document.getElementById("gridEquipeCompleta").style.display     = "none";
   document.getElementById("tempUsrFoto").value                    = "";
-  document.getElementById("cadUsrSenha").value = "";
-  document.getElementById("cadUsrSenha").placeholder = chaveAcesso ? "Deixe vazia para manter a atual" : "Mínimo de 8 caracteres";
   document.getElementById("previewUsrFoto").style.display         = "none";
   document.getElementById("cadUsrChaveAcesso").disabled                  = (chaveAcesso !== "");
   document.getElementById("btnExcluirUsuario").style.display      = (chaveAcesso !== "") ? "block" : "none";
@@ -3222,8 +3180,7 @@ function salvarUsuarioForm() {
     nome:     (document.getElementById("cadUsrNome").value || "").trim(),
     telefone: (document.getElementById("cadUsrTel").value  || "").trim(),
     tipo:     document.getElementById("cadUsrTipo").value  || "Marisqueira",
-    fotoUrl:  document.getElementById("tempUsrFoto").value,
-    senha:    document.getElementById("cadUsrSenha").value
+    fotoUrl:  document.getElementById("tempUsrFoto").value
   };
   if (!p.chaveAcesso || !p.nome) return alertBox("Chave de Acesso e Nome são obrigatórios.", true);
 

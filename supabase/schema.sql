@@ -11,16 +11,7 @@ create table if not exists public.usuarios (
   telefone text not null default '',
   tipo text not null default 'Marisqueira',
   foto text not null default '',
-  pin_hash text not null default '',
   criado_em timestamptz not null default now()
-);
-alter table public.usuarios add column if not exists pin_hash text not null default '';
-
-create table if not exists public.tentativas_login (
-  chave_normalizada text primary key,
-  falhas integer not null default 0,
-  inicio_janela timestamptz not null default now(),
-  bloqueado_ate timestamptz
 );
 create table if not exists public.produtos (
   nome text primary key, tipo text not null default 'Marisco', unidade text not null default 'KG',
@@ -101,62 +92,12 @@ create index if not exists saidas_data_venda_idx on public.saidas(data_venda);
 create index if not exists saidas_chave_idx on public.saidas(chave_acesso_operador);
 
 do $$ declare t text; begin
-  foreach t in array array['usuarios','tentativas_login','produtos','salgados','compradores','estoque_manual','entradas','producao','prod_salgados','saidas','estoque_associacao','metas','noticias','configuracoes','operacoes_offline'] loop
+  foreach t in array array['usuarios','produtos','salgados','compradores','estoque_manual','entradas','producao','prod_salgados','saidas','estoque_associacao','metas','noticias','configuracoes','operacoes_offline'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
     execute format('grant all on public.%I to service_role', t);
   end loop;
 end $$;
-
-create or replace function public.hash_pin(p_pin text) returns text
-language plpgsql security definer set search_path=public,extensions as $$
-begin
-  if length(p_pin) < 8 or length(p_pin) > 64 or octet_length(convert_to(p_pin,'UTF8')) > 72 then
-    raise exception using errcode='22023', message='A senha deve ter entre 8 e 64 caracteres.';
-  end if;
-  return crypt(p_pin, gen_salt('bf', 10));
-end $$;
-
-create or replace function public.autenticar_usuario(p_chave text, p_pin text) returns jsonb
-language plpgsql security definer set search_path=public,extensions as $$
-declare
-  v_key text := regexp_replace(coalesce(p_chave,''),'[^0-9]','','g');
-  v_user public.usuarios%rowtype;
-  v_attempt public.tentativas_login%rowtype;
-  v_failures integer;
-begin
-  if length(v_key)=0 or length(v_key)>20 or length(coalesce(p_pin,''))<1 or octet_length(convert_to(p_pin,'UTF8'))>72 then
-    return jsonb_build_object('sucesso',false,'mensagem','Chave ou senha inválida.');
-  end if;
-  perform pg_advisory_xact_lock(hashtextextended('login:'||v_key,0));
-  select * into v_attempt from public.tentativas_login where chave_normalizada=v_key for update;
-  if not found then
-    insert into public.tentativas_login(chave_normalizada,falhas,inicio_janela) values(v_key,0,now()) on conflict do nothing;
-    select * into v_attempt from public.tentativas_login where chave_normalizada=v_key for update;
-  end if;
-  if found and v_attempt.bloqueado_ate > now() then
-    return jsonb_build_object('sucesso',false,'mensagem','Muitas tentativas. Aguarde 15 minutos e tente novamente.');
-  end if;
-  select * into v_user from public.usuarios
-    where regexp_replace(chave_acesso,'[^0-9]','','g')=v_key limit 1;
-  if found and v_user.pin_hash<>'' and crypt(p_pin,v_user.pin_hash)=v_user.pin_hash then
-    delete from public.tentativas_login where chave_normalizada=v_key;
-    return jsonb_build_object('sucesso',true,'chaveAcesso',v_user.chave_acesso,'nome',v_user.nome,
-      'telefone',v_user.telefone,'tipo',v_user.tipo,'foto',v_user.foto);
-  end if;
-  v_failures := case when v_attempt.inicio_janela < now()-interval '15 minutes' then 1 else v_attempt.falhas+1 end;
-  update public.tentativas_login set
-    falhas=v_failures,
-    inicio_janela=case when v_attempt.inicio_janela < now()-interval '15 minutes' then now() else v_attempt.inicio_janela end,
-    bloqueado_ate=case when v_failures>=5 then now()+interval '15 minutes' else null end
-    where chave_normalizada=v_key;
-  return jsonb_build_object('sucesso',false,'mensagem','Chave ou senha inválida.');
-end $$;
-
-revoke all on function public.hash_pin(text) from public,anon,authenticated;
-revoke all on function public.autenticar_usuario(text,text) from public,anon,authenticated;
-grant execute on function public.hash_pin(text) to service_role;
-grant execute on function public.autenticar_usuario(text,text) to service_role;
 
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('midia','midia',true,5242880,array['image/jpeg','image/png','image/webp'])
