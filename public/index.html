@@ -1109,6 +1109,8 @@
     <!-- ======== GERENCIAR EQUIPE ======== -->
     <div id="screenCadUsuario" class="screen">
       <h2>👩‍👩‍👧 Gerenciar Equipe</h2>
+      <p style="font-size:0.8rem; color:var(--tinta-2); margin:0 0 8px;">Recupere fotos antigas do Google Drive e salve uma cópia no armazenamento do aplicativo.</p>
+      <button onclick="repararFotosUsuarios()" class="btn-secondary" style="margin-bottom:12px;">🖼️ Recuperar fotos antigas</button>
       <div id="gridEquipeCompleta" class="grid-visual"></div>
       <div id="blocoFormularioUsuario" style="display:none; border-top:2px dashed var(--vinho); margin-top:16px; padding-top:16px;">
         <h3 id="tituloFormUsuario">✏️ Dados</h3>
@@ -1123,7 +1125,7 @@
           <option value="Marisqueira">Marisqueira</option>
           <option value="Administrativo">Administrativo</option>
         </select>
-        <img id="previewUsrFoto" class="img-preview" style="border-radius:50%; width:90px; height:90px;">
+        <img id="previewUsrFoto" class="img-preview" style="border-radius:50%; width:90px; height:90px;" onerror="this.onerror=null;this.src='/icon.svg'">
         <label for="cadUsrFile" class="btn-file-pauta">📷 Foto</label>
         <input type="file" id="cadUsrFile" accept="image/*" style="display:none;" onchange="readImageBase64(this,'previewUsrFoto','tempUsrFoto')">
         <input type="hidden" id="tempUsrFoto">
@@ -1801,7 +1803,9 @@ function offEntrarComoUsuario(res) {
   if (res && res.token) localStorage.setItem("cg_session_token_v1", res.token);
   document.getElementById("lblNomeUsuario").innerText = res.nome || "Usuário";
   document.getElementById("lblTipoUsuario").innerText = res.tipo || "Marisqueira";
-  document.getElementById("imgUserSession").src = normalizarUrlImagem(res.foto || FOTO_PESSOA);
+  var sessionAvatar = document.getElementById("imgUserSession");
+  sessionAvatar.onerror = function() { this.onerror = null; this.src = FOTO_PESSOA; };
+  sessionAvatar.src = normalizarUrlImagem(res.foto || FOTO_PESSOA);
 
   var isAdmin = (res.tipo === "Administrativo");
   document.getElementById("menuAdminArea").style.display = isAdmin ? "block" : "none";
@@ -2343,7 +2347,7 @@ function renderListaCompradores() {
     var nomeEsc = escAttr(comp.nome || "");
     html += '<div class="card-visual" style="position:relative;">'
       + '<button class="btn-del-card" onclick="event.stopPropagation(); confirmarExclusaoItem(\'comprador\',\'' + nomeEsc + '\')">×</button>'
-      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+      + '<img src="' + img + '" onerror="this.onerror=null;this.src=\'' + FOTO_PESSOA + '\'">'
       + '<span>' + escHtml((comp.nome || "")) + '</span>'
       + '</div>';
   });
@@ -3125,7 +3129,7 @@ function renderEquipe() {
     var img    = fotoAttr(u.foto || FOTO_PESSOA,FOTO_PESSOA);
     var cpfEsc = escAttr(u.chaveAcesso || "");
     return '<div class="card-equipe" onclick="exibirFormularioNovoUsuario(\'' + cpfEsc + '\')">'
-      + '<img src="' + img + '" onerror="this.src=\'' + FOTO_PESSOA + '\'">'
+      + '<img src="' + img + '" onerror="this.onerror=null;this.src=\'' + FOTO_PESSOA + '\'">'
       + '<div class="card-equipe-nome">' + escHtml((u.nome || "")) + '</div>'
       + '<div class="card-equipe-info">Chave de Acesso: ' + escHtml(u.chaveAcesso || "") + '</div>'
       + '</div>';
@@ -3136,6 +3140,30 @@ function renderEquipe() {
     + '</div>';
   document.getElementById("gridEquipeCompleta").innerHTML = html;
   document.getElementById("gridEquipeCompleta").style.display = "flex";
+}
+
+function repararFotosUsuarios() {
+  if (!offExigeInternet()) return;
+  alertBox("Verificando as fotos antigas do Drive…", false);
+  AppAPI.run
+    .withSuccessHandler(function(res) {
+      var msg = res && res.encontradas
+        ? res.atualizadas + " de " + res.encontradas + " fotos antigas foram recuperadas."
+        : "Não encontrei fotos antigas do Google Drive para recuperar.";
+      if (res && res.falhas && res.falhas.length) msg += " Não foi possível acessar: " + res.falhas.join(", ") + ".";
+      recarregarDados(function() {
+        var atual = (cacheApp.todosUsuarios || []).find(function(u) { return userSession && u.chaveAcesso === userSession.chaveAcesso; });
+        if (atual && atual.foto) {
+          userSession.foto = atual.foto;
+          var avatar = document.getElementById("imgUserSession");
+          if (avatar) { avatar.onerror = function() { this.onerror = null; this.src = FOTO_PESSOA; }; avatar.src = normalizarUrlImagem(atual.foto); }
+        }
+        renderEquipe();
+        alertBox(msg, !!(res && res.falhas && res.falhas.length));
+      });
+    })
+    .withFailureHandler(function(err) { alertBox("Erro ao recuperar fotos: " + (err ? err.message : "verifique a conexão."), true); })
+    .repararFotosUsuarios();
 }
 
 function exibirFormularioNovoUsuario(chaveAcesso) {

@@ -61,6 +61,7 @@ async function rows(table: string, order = "") {
   for (let start = 0; ; start += 1000) {
     let q = supabase.from(table).select("*").range(start, start + 999);
     if (order) q = q.order(order, { ascending: true });
+    if (order === "data_registro") q = q.order("id", { ascending: true });
     const { data, error } = await q;
     if (error) throw error;
     result.push(...(data || []));
@@ -72,6 +73,77 @@ async function one(table: string, key: string, value: unknown) {
   const { data, error } = await supabase.from(table).select("*").eq(key, value).maybeSingle();
   if (error) throw error;
   return data;
+}
+function reportDateKey(value: unknown) {
+  const raw = clean(value);
+  if (!raw) return "";
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})/);
+  if (br) {
+    const year = br[3].length === 2 ? `20${br[3]}` : br[3];
+    return `${year}-${br[2].padStart(2,"0")}-${br[1].padStart(2,"0")}`;
+  }
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit",
+  }).formatToParts(parsed);
+  const part = (type: string) => parts.find(p => p.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function reportDateText(value: unknown) {
+  const key = reportDateKey(value);
+  return key ? `${key.slice(8,10)}/${key.slice(5,7)}/${key.slice(0,4)}` : "—";
+}
+function reportTimestampText(value: unknown) {
+  const raw = clean(value);
+  if (!raw) return "—";
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return raw;
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone:"America/Sao_Paulo",dateStyle:"short",timeStyle:"short",
+  }).format(parsed);
+}
+function reportTimestampOrder(value: unknown) {
+  const parsed = new Date(clean(value));
+  return Number.isFinite(parsed.getTime()) ? parsed.getTime() : 0;
+}
+function legacyGoogleImageCandidates(value: unknown) {
+  try {
+    const url = new URL(clean(value));
+    const host = url.hostname.toLowerCase();
+    if (host === "lh3.googleusercontent.com" || host === "drive.googleusercontent.com") return [url.href];
+    if (host !== "drive.google.com" && host !== "docs.google.com" && host !== "drive.usercontent.google.com") return [];
+    const pathMatch = url.pathname.match(/\/(?:file|document)?\/?d\/([^/]+)/i) || url.pathname.match(/\/d\/([^/]+)/i);
+    const id = url.searchParams.get("id") || pathMatch?.[1];
+    if (!id) return [];
+    const encoded = encodeURIComponent(id);
+    return [
+      `https://drive.google.com/uc?export=download&id=${encoded}`,
+      `https://drive.google.com/thumbnail?id=${encoded}&sz=w1200`,
+    ];
+  } catch (_) { return []; }
+}
+async function downloadLegacyGoogleImage(urls: string[]) {
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { headers:{ Accept:"image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8" } });
+      if (!response.ok) continue;
+      const length = Number(response.headers.get("content-length") || 0);
+      if (length > 5*1024*1024) continue;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (!bytes.length || bytes.length > 5*1024*1024) continue;
+      const declared = (response.headers.get("content-type") || "").split(";")[0].toLowerCase();
+      let contentType = declared;
+      if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) contentType = "image/jpeg";
+      else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) contentType = "image/png";
+      else if (String.fromCharCode(...bytes.slice(0,4)) === "RIFF" && String.fromCharCode(...bytes.slice(8,12)) === "WEBP") contentType = "image/webp";
+      if (!["image/jpeg","image/png","image/webp"].includes(contentType)) continue;
+      return { bytes, contentType };
+    } catch (_) { /* tenta a próxima URL pública do mesmo arquivo */ }
+  }
+  throw new Error("A imagem do Drive não está pública ou não pôde ser lida.");
 }
 async function saveStock(key: string, name: string, type: string, product: string, delta: number, operator: string, setValue = false) {
   if (!key || !product) return;
@@ -149,19 +221,26 @@ async function inventoryAssociation() {
 async function report(f: any, user: { chaveAcesso:string; nome:string; tipo:string }) {
   const type = f.tipo;
   const table = type === "entrada" ? "entradas" : type === "salgado" ? "prod_salgados" : "saidas";
-  const [records, users, salty] = await Promise.all([rows(table), rows("usuarios"), rows("salgados")]);
+  const [records, users, salty] = await Promise.all([rows(table,"data_registro"), rows("usuarios"), rows("salgados")]);
   const people = Object.fromEntries(users.map(u => [u.chave_acesso,u.nome]));
   const mapName = (key: string, fallback: string) => key === "ASSOCIACAO" ? "Associação AMQMI" : people[key] || fallback || "—";
-  const start = f.dataIni || "0000-01-01", end = f.dataFim || "9999-12-31";
+  const start = reportDateKey(f.dataIni) || "0000-01-01", end = reportDateKey(f.dataFim) || "9999-12-31";
   const values: string[][] = [], metas: any[] = [];
   const headers = type === "entrada"
     ? ["Dt. Coleta","Lote","Marisqueira","Produto","Qtd","Registrado por","Dt. Registro","Status"]
     : type === "salgado"
       ? ["Dt. Produção","Lote","Produto","Qtd","Marisqueira","Registrado por","Observação","Dt. Registro","Status"]
       : ["Dt. Venda","Lote","Vendedor(a)","Produto","Qtd","Total (R$)","Comprador","Tipo","Registrado por","Dt. Registro","Status"];
-  records.forEach((r: any, index: number) => {
-    const refDate = type === "entrada" ? r.data_mariscagem : type === "salgado" ? r.data_referencia : r.data_venda;
-    if (refDate < start || refDate > end) return;
+  const referenceDate = (r: any) => reportDateKey(type === "entrada" ? r.data_mariscagem : type === "salgado" ? r.data_referencia : r.data_venda)
+    || reportDateKey(r.data_registro);
+  const orderedRecords = records.slice().sort((a: any,b: any) =>
+    referenceDate(b).localeCompare(referenceDate(a))
+    || reportTimestampOrder(b.data_registro)-reportTimestampOrder(a.data_registro)
+    || clean(b.id).localeCompare(clean(a.id))
+  );
+  orderedRecords.forEach((r: any) => {
+    const refDate = referenceDate(r);
+    if (!refDate || refDate < start || refDate > end) return;
     const ownerKey = type === "entrada" ? r.chave_marisqueira : r.chave_acesso_operador;
     if (user.tipo !== "Administrativo" && ownerKey !== user.chaveAcesso) return;
     const requestedKey = user.tipo === "Administrativo" ? f.marisqueiraChave : user.chaveAcesso;
@@ -169,15 +248,16 @@ async function report(f: any, user: { chaveAcesso:string; nome:string; tipo:stri
     if (type === "saida") {
       const seller = mapName(r.chave_acesso_operador, r.operador);
       if (f.vendedor && seller !== f.vendedor && r.operador !== f.vendedor) return;
-      if (f.compradorEsporadico && !String(r.destino).startsWith("Esporádico:")) return;
-      if (f.nomeEsporadico && !r.destino.toLowerCase().includes(String(f.nomeEsporadico).toLowerCase())) return;
-      if (!f.compradorEsporadico && f.compradorNome && !r.destino.includes(f.compradorNome)) return;
-      values.push([new Date(r.data_venda).toLocaleDateString("pt-BR"),r.lote || "—",seller,r.produto,`${num(r.quantidade).toFixed(2)} ${r.unidade}`,`R$ ${num(r.total_venda).toFixed(2)}`,r.destino,r.tipo_item === "salgado" ? "🥟 Processado" : "🦀 Pescado",r.operador,new Date(r.data_registro).toLocaleString("pt-BR"),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
+      const destination = clean(r.destino);
+      if (f.compradorEsporadico && !destination.startsWith("Esporádico:")) return;
+      if (f.nomeEsporadico && !destination.toLowerCase().includes(String(f.nomeEsporadico).toLowerCase())) return;
+      if (!f.compradorEsporadico && f.compradorNome && !destination.includes(f.compradorNome)) return;
+      values.push([reportDateText(refDate),r.lote || "—",seller,r.produto,`${num(r.quantidade).toFixed(2)} ${r.unidade}`,`R$ ${num(r.total_venda).toFixed(2)}`,destination,r.tipo_item === "salgado" ? "🥟 Processado" : "🦀 Pescado",r.operador,reportTimestampText(r.data_registro),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
     } else if (type === "entrada") {
-      values.push([new Date(r.data_mariscagem).toLocaleDateString("pt-BR"),r.lote || "—",r.nome_marisqueira,r.produto,`${num(r.quantidade).toFixed(2)} ${r.unidade}`,r.operador,new Date(r.data_registro).toLocaleString("pt-BR"),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
+      values.push([reportDateText(refDate),r.lote || "—",r.nome_marisqueira,r.produto,`${num(r.quantidade).toFixed(2)} ${r.unidade}`,r.operador,reportTimestampText(r.data_registro),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
     } else {
       const unit = salty.find(s => s.nome === r.salgado)?.unidade || "UN";
-      values.push([new Date(r.data_referencia).toLocaleDateString("pt-BR"),r.lote || "—",r.salgado,`${num(r.quantidade)} ${unit}`,mapName(r.chave_acesso_operador,r.operador),r.operador,r.observacao || "",new Date(r.data_registro).toLocaleString("pt-BR"),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
+      values.push([reportDateText(refDate),r.lote || "—",r.salgado,`${num(r.quantidade)} ${unit}`,mapName(r.chave_acesso_operador,r.operador),r.operador,r.observacao || "",reportTimestampText(r.data_registro),r.invalidado ? `🚫 Invalidado por ${r.invalidado_por || "—"}` : "✅ Válido"]);
     }
     metas.push({ sheet: type === "entrada" ? "Entradas" : type === "salgado" ? "ProdSalgados" : "Saidas", linha:r.id });
   });
@@ -237,6 +317,33 @@ async function dispatch(action: string, args: any, user: any) {
       const { error } = await supabase.from("usuarios").upsert({ chave_acesso:key,nome:clean(payload.nome),telefone:clean(payload.telefone),tipo:clean(payload.tipo)||"Marisqueira",foto:clean(payload.fotoUrl) });
       if (error) throw error;
       return "Cadastro atualizado!";
+    }
+    case "repararFotosUsuarios": {
+      requireAdmin(user);
+      const eligible = (await rows("usuarios")).filter(u => legacyGoogleImageCandidates(u.foto).length > 0);
+      let atualizadas = 0;
+      const falhas: string[] = [];
+      for (let i=0; i<eligible.length; i+=4) {
+        const batch = eligible.slice(i,i+4);
+        const outcomes = await Promise.all(batch.map(async u => {
+          try {
+            const { bytes, contentType } = await downloadLegacyGoogleImage(legacyGoogleImageCandidates(u.foto));
+            const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+            const path = `usuarios/${crypto.randomUUID()}.${ext}`;
+            const { error:uploadError } = await supabase.storage.from("midia").upload(path,bytes,{contentType,upsert:false});
+            if (uploadError) throw uploadError;
+            const publicUrl = supabase.storage.from("midia").getPublicUrl(path).data.publicUrl;
+            const { error:updateError } = await supabase.from("usuarios").update({ foto:publicUrl }).eq("chave_acesso",u.chave_acesso);
+            if (updateError) {
+              await supabase.storage.from("midia").remove([path]);
+              throw updateError;
+            }
+            return true;
+          } catch (_) { return false; }
+        }));
+        outcomes.forEach((ok,index) => { if (ok) atualizadas++; else falhas.push(clean(batch[index].nome) || clean(batch[index].chave_acesso)); });
+      }
+      return { encontradas:eligible.length,atualizadas,falhas };
     }
     case "excluirUsuarioPorChaveAcesso": { requireAdmin(user); const { error } = await supabase.from("usuarios").delete().eq("chave_acesso",clean(payload)); if (error) throw error; return "Usuário excluído!"; }
     case "salvarProduto": { requireAdmin(user); const { error } = await supabase.from("produtos").upsert({nome:clean(payload.nomeProduto),tipo:clean(payload.tipoProduto)||"Marisco",unidade:clean(payload.unidade)||"KG",valor:num(payload.valor),foto:clean(payload.fotoUrl),operador:user.nome}); if (error) throw error; return "Produto cadastrado!"; }
