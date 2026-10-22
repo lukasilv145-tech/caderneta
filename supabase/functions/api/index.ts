@@ -320,30 +320,43 @@ async function dispatch(action: string, args: any, user: any) {
     }
     case "repararFotosUsuarios": {
       requireAdmin(user);
-      const eligible = (await rows("usuarios")).filter(u => legacyGoogleImageCandidates(u.foto).length > 0);
-      let atualizadas = 0;
-      const falhas: string[] = [];
-      for (let i=0; i<eligible.length; i+=4) {
-        const batch = eligible.slice(i,i+4);
-        const outcomes = await Promise.all(batch.map(async u => {
-          try {
-            const { bytes, contentType } = await downloadLegacyGoogleImage(legacyGoogleImageCandidates(u.foto));
-            const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
-            const path = `usuarios/${crypto.randomUUID()}.${ext}`;
-            const { error:uploadError } = await supabase.storage.from("midia").upload(path,bytes,{contentType,upsert:false});
-            if (uploadError) throw uploadError;
-            const publicUrl = supabase.storage.from("midia").getPublicUrl(path).data.publicUrl;
-            const { error:updateError } = await supabase.from("usuarios").update({ foto:publicUrl }).eq("chave_acesso",u.chave_acesso);
-            if (updateError) {
-              await supabase.storage.from("midia").remove([path]);
-              throw updateError;
+      const tables = [
+        { table:"usuarios",folder:"usuarios",key:"chave_acesso",label:"equipe" },
+        { table:"produtos",folder:"produtos",key:"nome",label:"produtos" },
+        { table:"salgados",folder:"salgados",key:"nome",label:"salgados" },
+      ];
+      const resumo: Record<string,{ encontradas:number; atualizadas:number; falhas:string[]; semFoto:string[] }> = {};
+      for (const target of tables) {
+        const records = await rows(target.table);
+        const eligible = records.filter(r => legacyGoogleImageCandidates(r.foto).length > 0);
+        const semFoto = records.filter(r => !clean(r.foto)).map(r => clean(r.nome) || clean(r[target.key]));
+        const result = resumo[target.label] = { encontradas:eligible.length,atualizadas:0,falhas:[],semFoto };
+        for (let i=0; i<eligible.length; i+=4) {
+          const batch = eligible.slice(i,i+4);
+          const outcomes = await Promise.all(batch.map(async record => {
+            let path = "";
+            try {
+              const { bytes, contentType } = await downloadLegacyGoogleImage(legacyGoogleImageCandidates(record.foto));
+              const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+              path = `${target.folder}/${crypto.randomUUID()}.${ext}`;
+              const { error:uploadError } = await supabase.storage.from("midia").upload(path,bytes,{contentType,upsert:false});
+              if (uploadError) throw uploadError;
+              const publicUrl = supabase.storage.from("midia").getPublicUrl(path).data.publicUrl;
+              const { error:updateError } = await supabase.from(target.table).update({ foto:publicUrl }).eq(target.key,record[target.key]);
+              if (updateError) {
+                await supabase.storage.from("midia").remove([path]);
+                throw updateError;
+              }
+              return true;
+            } catch (_) {
+              if (path) await supabase.storage.from("midia").remove([path]);
+              return false;
             }
-            return true;
-          } catch (_) { return false; }
-        }));
-        outcomes.forEach((ok,index) => { if (ok) atualizadas++; else falhas.push(clean(batch[index].nome) || clean(batch[index].chave_acesso)); });
+          }));
+          outcomes.forEach((ok,index) => { if (ok) result.atualizadas++; else result.falhas.push(clean(batch[index].nome) || clean(batch[index][target.key])); });
+        }
       }
-      return { encontradas:eligible.length,atualizadas,falhas };
+      return { resumo };
     }
     case "excluirUsuarioPorChaveAcesso": { requireAdmin(user); const { error } = await supabase.from("usuarios").delete().eq("chave_acesso",clean(payload)); if (error) throw error; return "Usuário excluído!"; }
     case "salvarProduto": { requireAdmin(user); const { error } = await supabase.from("produtos").upsert({nome:clean(payload.nomeProduto),tipo:clean(payload.tipoProduto)||"Marisco",unidade:clean(payload.unidade)||"KG",valor:num(payload.valor),foto:clean(payload.fotoUrl),operador:user.nome}); if (error) throw error; return "Produto cadastrado!"; }

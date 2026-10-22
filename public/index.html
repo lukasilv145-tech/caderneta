@@ -1109,8 +1109,8 @@
     <!-- ======== GERENCIAR EQUIPE ======== -->
     <div id="screenCadUsuario" class="screen">
       <h2>👩‍👩‍👧 Gerenciar Equipe</h2>
-      <p style="font-size:0.8rem; color:var(--tinta-2); margin:0 0 8px;">Recupere fotos antigas do Google Drive e salve uma cópia no armazenamento do aplicativo.</p>
-      <button onclick="repararFotosUsuarios()" class="btn-secondary" style="margin-bottom:12px;">🖼️ Recuperar fotos antigas</button>
+      <p style="font-size:0.8rem; color:var(--tinta-2); margin:0 0 8px;">Recupere fotos antigas do Google Drive da equipe e dos produtos. Cadastros sem foto precisam receber uma imagem nova.</p>
+      <button onclick="repararFotosUsuarios()" class="btn-secondary" style="margin-bottom:12px;">🖼️ Recuperar fotos antigas da equipe e do catálogo</button>
       <div id="gridEquipeCompleta" class="grid-visual"></div>
       <div id="blocoFormularioUsuario" style="display:none; border-top:2px dashed var(--vinho); margin-top:16px; padding-top:16px;">
         <h3 id="tituloFormUsuario">✏️ Dados</h3>
@@ -3144,13 +3144,23 @@ function renderEquipe() {
 
 function repararFotosUsuarios() {
   if (!offExigeInternet()) return;
-  alertBox("Verificando as fotos antigas do Drive…", false);
+  alertBox("Verificando as fotos antigas da equipe e do catálogo…", false);
   AppAPI.run
     .withSuccessHandler(function(res) {
-      var msg = res && res.encontradas
-        ? res.atualizadas + " de " + res.encontradas + " fotos antigas foram recuperadas."
-        : "Não encontrei fotos antigas do Google Drive para recuperar.";
-      if (res && res.falhas && res.falhas.length) msg += " Não foi possível acessar: " + res.falhas.join(", ") + ".";
+      var resumo = res && res.resumo || {};
+      var partes = [];
+      ["equipe", "produtos", "salgados"].forEach(function(grupo) {
+        var item = resumo[grupo];
+        if (item && item.encontradas) partes.push(grupo + ": " + item.atualizadas + "/" + item.encontradas + " recuperadas");
+      });
+      var msg = partes.length ? "Fotos recuperadas — " + partes.join("; ") + "." : "Não encontrei fotos antigas do Google Drive para recuperar.";
+      var faltas = resumo.equipe && resumo.equipe.semFoto || [];
+      if (faltas.length) msg += " " + faltas.length + " pessoa(s) estão sem foto cadastrada" + (faltas.length <= 5 ? ": " + faltas.join(", ") + "." : ". Atualize as fotos no cadastro da equipe.");
+      var falhas = [];
+      Object.keys(resumo).forEach(function(grupo) {
+        (resumo[grupo].falhas || []).forEach(function(nome) { falhas.push(nome + " (" + grupo + ")"); });
+      });
+      if (falhas.length) msg += " Não foi possível acessar: " + falhas.slice(0, 8).join(", ") + (falhas.length > 8 ? " e mais " + (falhas.length - 8) : "") + ".";
       recarregarDados(function() {
         var atual = (cacheApp.todosUsuarios || []).find(function(u) { return userSession && u.chaveAcesso === userSession.chaveAcesso; });
         if (atual && atual.foto) {
@@ -3159,7 +3169,7 @@ function repararFotosUsuarios() {
           if (avatar) { avatar.onerror = function() { this.onerror = null; this.src = FOTO_PESSOA; }; avatar.src = normalizarUrlImagem(atual.foto); }
         }
         renderEquipe();
-        alertBox(msg, !!(res && res.falhas && res.falhas.length));
+        alertBox(msg, !!falhas.length || !!faltas.length);
       });
     })
     .withFailureHandler(function(err) { alertBox("Erro ao recuperar fotos: " + (err ? err.message : "verifique a conexão."), true); })
